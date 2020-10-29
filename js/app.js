@@ -68,3 +68,11 @@ function render() {
 
 
 }
+
+// TODO: 
+// player choose placement
+// computer choose placement
+// player makes guesses
+// computer makes guesses
+// determine when ship is sunk and display image
+// determine winner
