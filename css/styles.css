@@ -16,3 +16,7 @@
     display: grid;
     grid-template: 100% / repeat(8, 1fr);
 }
+
+.grid-cell.selected {
+    background-color: red;
+}
