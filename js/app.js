@@ -43,14 +43,15 @@ let bugLocations = {
     } // This should hold an array of x,y coordinates
 } // This will be an object similar to the constant
 let bugsPlaced; // will be a true/false value to determine if game is ready to start
-let selectedCells = [];
+let selectedCells = []; // this will be for placement
 let currentBug; //This will be the bug that the player is currently placing
 
 /*----- cached element references -----*/
 const startBtnEl = document.getElementById('start');
 const playerGrid = document.getElementById('player-grid');
 const computerGrid = document.getElementById('computer-grid');
-let selectedEl;
+let selectedEl; // this is the cell that was clicked
+let selectedBugBodyEls = []; // this shows where the entire bug will be if placed
 
 
 /*----- event listeners -----*/
@@ -105,17 +106,30 @@ function init() {
 }
 
 function render() {
+    //TODO change these to altering classes instead
     selectedEl.style.background = 'red';
+    console.log(selectedBugBodyEls);
+    if(selectedBugBodyEls){
+        selectedBugBodyEls.forEach(function(cell){
+            cell.style.background = 'purple';
+            //START WITH THIS ERROR AND THEN MOVE BACK DOWN TO LINE 154
+        });
+    }
 
 }
 
 function handleGridClick(e){
-    selectedEl = e.target;
+    let direction;
     //If bugs have not been placed, lets place them
     if(!bugsPlaced){
+        if(e.target === selectedEl) {
+            //rotate the selection
+        }
+        selectedEl = e.target;
         //Get current bug that needs to be placed, and it's length
         //Default direction will be to the right, if bug doesn't run off edge of board or hit another bug
         //show it...else gray out the selection
+        direction = "h"; //values will be v or h
         planBug(currentBug, selectedEl);
         
 
@@ -131,9 +145,38 @@ function handleGridClick(e){
 
     function planBug(bug, cell){
         let coordinates = cell.id.split(", ");
-        let x = coordinates[0];
-        let y = coordinates[1];
-        console.log('x is', x, 'and y is', y);
+        let x = parseInt(coordinates[0]);
+        let y = parseInt(coordinates[1]);
+        selectedCells.push([x,y]);
+        for(let i = 0; i< BATTLEBUGS[bug].size; i++){
+            if(direction === 'h') {
+                //check that it doesn't go off board
+                if(hasRoom(x) && noCollisions(x,y)){
+                    selectedCells.push([x+i, y]);
+                    selectedBugBodyEls.push(document.getElementById(`${x+i}, ${y}`));
+                } else {
+                    selectedCells = [x,y];
+                    selectedBugBodyEls = [];
+                    console.log('not enough room');
+                }
+
+            } else if (direction === "v"){
+
+            }
+        }
+        console.log(selectedCells);
+        
+        function hasRoom(coord){
+            if(coord < 0 || coord > 8){
+                return false;
+            }
+            return true;
+        }
+
+        function noCollisions(x,y){
+            //TODO check for bug locations to make sure nothing is already placed
+            return true
+        }
     }
 }
 
