@@ -1,0 +1,18 @@
+#game-board {
+    display: grid;
+    grid-template: 1fr 4fr/1fr 1fr;
+}
+
+#game-board div {
+    border: 1px solid black;
+}
+
+.grid {
+    display: grid;
+    grid-template: repeat(8, 45px)/ 100%;
+}
+
+.grid .grid-row {
+    display: grid;
+    grid-template: 100% / repeat(8, 1fr);
+}
