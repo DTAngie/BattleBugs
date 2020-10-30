@@ -98,6 +98,7 @@ function init() {
 
     function generateBoard(grid){
         grid = grid.querySelector('div');
+        grid.innerHTML = "";
         for(let r = GRID_SIZE; r > 0; r --){ // create the rows
             const row = document.createElement('div');
             row.setAttribute('class', 'grid-row');
@@ -121,7 +122,6 @@ function render() {
     }
 
     if(selectedBugBodyEls.length > 0){
-        console.log(selectedBugBodyEls);
         selectedBugBodyEls.forEach(function(cell){
             cell.classList.add('selected');
             //START WITH THIS ERROR AND THEN MOVE BACK DOWN TO LINE 154
@@ -142,6 +142,7 @@ function render() {
 function handleGridClick(e){
     //If bugs have not been placed, let's place them
     if(!bugsPlaced){
+        selectedCells=[];
         if(e.target === selectedEl) { //if you are clicking on the same spot
             //rotate the selection
             direction = (direction === "h") ? "v" : "h";
@@ -173,7 +174,6 @@ function handleGridClick(e){
         let x = parseInt(coordinates[0]);
         let y = parseInt(coordinates[1]);
         selectedBugBodyEls = [];
-        selectedCells.push([x,y]);
         for(let i = 0; i< BATTLEBUGS[bug].size; i++){
             if(hasRoom(x, y, BATTLEBUGS[bug].size)){
                 if(direction === "h"){
@@ -196,13 +196,13 @@ function handleGridClick(e){
         function hasRoom(x, y, bugSize){
             if(direction === "h"){
                 //check for overflow
-                if(x + bugSize > GRID_SIZE){
+                if(x + bugSize > GRID_SIZE + 1){
                     return false
                 }
                 return true;
                 //TODO check for bugs ... could be done in same if statement with || operator
             } else if (direction === "v") {
-                if(y + bugSize > GRID_SIZE) {
+                if(y + bugSize > GRID_SIZE + 1) {
                     return false;
                 }
                 return true;
@@ -223,6 +223,8 @@ function placeBug(e){
     if(!readyToPlace){
         return;
     }
+    bugLocations.player[currentBug] =  selectedCells;
+    console.log(bugLocations);
 }
 
 function renderMessage(){
