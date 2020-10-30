@@ -45,11 +45,13 @@ let bugLocations = {
 let bugsPlaced; // will be a true/false value to determine if game is ready to start
 let selectedCells = []; // this will be for placement
 let currentBug; //This will be the bug that the player is currently placing
+let gameMessage;
 
 /*----- cached element references -----*/
 const startBtnEl = document.getElementById('start');
 const playerGrid = document.getElementById('player-grid');
 const computerGrid = document.getElementById('computer-grid');
+const messageEl = document.getElementById('message');
 let selectedEl; // this is the cell that was clicked
 let selectedBugBodyEls = []; // this shows where the entire bug will be if placed
 
@@ -106,37 +108,47 @@ function init() {
 }
 
 function render() {
+    let playerCells = playerGrid.querySelectorAll('.grid-cell');
+
+    for(let i = 0; i < playerCells.length; i ++){ // clear the blocks and rebuild them
+        playerCells[i].className = "grid-cell";
+    }
     //TODO change these to altering classes instead
-    selectedEl.style.background = 'red';
+    selectedEl.classList.add('selected');
     console.log(selectedBugBodyEls);
     if(selectedBugBodyEls){
+        console.log(selectedBugBodyEls);
         selectedBugBodyEls.forEach(function(cell){
-            cell.style.background = 'purple';
+            cell.classList.add('selected');
             //START WITH THIS ERROR AND THEN MOVE BACK DOWN TO LINE 154
         });
     }
+
+    renderMessage();
 
 }
 
 function handleGridClick(e){
     let direction;
-    //If bugs have not been placed, lets place them
+    //If bugs have not been placed, let's place them
     if(!bugsPlaced){
-        if(e.target === selectedEl) {
+        if(e.target === selectedEl) { //if you are clicking on the same spot
             //rotate the selection
+        } else { //if you are clicking on a different spot
+            selectedBugBodyEls = [];
+            selectedEl = e.target;
+            //Get current bug that needs to be placed, and it's length
+            //Default direction will be to the right, if bug doesn't run off edge of board or hit another bug
+            //show it...else gray out the selection
+            direction = "h"; //values will be v or h
+            planBug(currentBug, selectedEl);
+            
+            console.log(currentBug);
+            //Player can either click on cell to rotate bug or click a different cell to place it there
+    
+            //Once all bugs are placed, computer should place its bugs
+
         }
-        selectedEl = e.target;
-        //Get current bug that needs to be placed, and it's length
-        //Default direction will be to the right, if bug doesn't run off edge of board or hit another bug
-        //show it...else gray out the selection
-        direction = "h"; //values will be v or h
-        planBug(currentBug, selectedEl);
-        
-
-        console.log(currentBug);
-        //Player can either click on cell to rotate bug or click a different cell to place it there
-
-        //Once all bugs are placed, computer should place its bugs
         
     } else {
         // else... let's play the game
@@ -151,13 +163,14 @@ function handleGridClick(e){
         for(let i = 0; i< BATTLEBUGS[bug].size; i++){
             if(direction === 'h') {
                 //check that it doesn't go off board
-                if(hasRoom(x) && noCollisions(x,y)){
+                if(hasRoom(x, BATTLEBUGS[bug].size) && noCollisions(x,y)){
                     selectedCells.push([x+i, y]);
                     selectedBugBodyEls.push(document.getElementById(`${x+i}, ${y}`));
                 } else {
                     selectedCells = [x,y];
                     selectedBugBodyEls = [];
-                    console.log('not enough room');
+                    gameMessage = "Not enough space. Click again to rotate or choose another location";
+                    return false; // False means that bug can't be planned
                 }
 
             } else if (direction === "v"){
@@ -166,8 +179,8 @@ function handleGridClick(e){
         }
         console.log(selectedCells);
         
-        function hasRoom(coord){
-            if(coord < 0 || coord > 8){
+        function hasRoom(coord, bugSize){
+            if(coord + bugSize > 8){
                 return false;
             }
             return true;
@@ -177,6 +190,14 @@ function handleGridClick(e){
             //TODO check for bug locations to make sure nothing is already placed
             return true
         }
+    }
+}
+
+function renderMessage(){
+    if(gameMessage){
+        messageEl.innerText = gameMessage;
+    } else {
+        messageEl.innerText = "";
     }
 }
 

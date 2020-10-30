@@ -17,6 +17,20 @@
     grid-template: 100% / repeat(8, 1fr);
 }
 
-.grid-cell.selected {
-    background-color: red;
+/*------ Cells ------*/
+.grid-cell {
+    background-color: white;
 }
+
+.grid-cell.selected {
+    background-color: purple;
+}
+
+.grid-cell.unavailable {
+    background-color: grey;
+}
+
+.grid-cell.placed {
+    background-color: green;
+}
+
