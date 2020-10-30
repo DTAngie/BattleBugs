@@ -45,7 +45,7 @@ let bugLocations = {
 } // This will be an object similar to the constant
 let bugsPlaced; // will be a true/false value to determine if game is ready to start
 let selectedCells = []; // this will be for placement
-let currentBug; //This will be the bug that the player is currently placing
+let currentBug; //This will be the bug that the player is currently placing, notated by index number
 let gameMessage;
 let direction;
 
@@ -90,7 +90,7 @@ function init() {
     }
     deadComputerBugs = 0;
     deadPlayerBugs = 0;
-    currentBug = PLACEMENT_ORDER[0];
+    currentBug = 0;
     readyToPlace = false;
     generateBoard(playerGrid);
     generateBoard(computerGrid);
@@ -124,10 +124,16 @@ function render() {
     if(selectedBugBodyEls.length > 0){
         selectedBugBodyEls.forEach(function(cell){
             cell.classList.add('selected');
-            //START WITH THIS ERROR AND THEN MOVE BACK DOWN TO LINE 154
         });
     } else {
         selectedEl.classList.add('unavailable');
+    }
+    //Render placed bugs
+    for(let bug in bugLocations.player) {
+        bugLocations.player[bug].forEach(function(point){
+            let occupiedCell = document.getElementById(`${point[0]}, ${point[1]}`);
+            occupiedCell.classList.add('placed');
+        });
     }
     if(!readyToPlace) {
         placeBtnEl.setAttribute('disabled', 'disabled');
@@ -142,11 +148,12 @@ function render() {
 function handleGridClick(e){
     //If bugs have not been placed, let's place them
     if(!bugsPlaced){
+        console.log(currentBug);
         selectedCells=[];
         if(e.target === selectedEl) { //if you are clicking on the same spot
             //rotate the selection
             direction = (direction === "h") ? "v" : "h";
-            planBug(currentBug, selectedEl);
+            planBug(PLACEMENT_ORDER[currentBug], selectedEl);
         } else { //if you are clicking on a different spot
             direction = "h";
             selectedBugBodyEls = [];
@@ -155,9 +162,9 @@ function handleGridClick(e){
             //Default direction will be to the right, if bug doesn't run off edge of board or hit another bug
             //show it...else gray out the selection
             direction = "h"; //values will be v or h
-            planBug(currentBug, selectedEl);
+            planBug(PLACEMENT_ORDER[currentBug], selectedEl);
             
-            console.log(currentBug);
+            console.log(PLACEMENT_ORDER[currentBug]);
             //Player can either click on cell to rotate bug or click a different cell to place it there
     
             //Once all bugs are placed, computer should place its bugs
@@ -225,7 +232,11 @@ function placeBug(e){
     }
     bugLocations.player[currentBug] =  selectedCells;
     console.log(bugLocations);
+    currentBug++;
+    render();
+    //TODO When all pbugs are placed it's time for computer to place bugs.
 }
+
 
 function renderMessage(){
     if(gameMessage){
