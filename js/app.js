@@ -51,15 +51,18 @@ let direction;
 
 /*----- cached element references -----*/
 const startBtnEl = document.getElementById('start');
+const placeBtnEl = document.getElementById('place');
 const playerGrid = document.getElementById('player-grid');
 const computerGrid = document.getElementById('computer-grid');
 const messageEl = document.getElementById('message');
 let selectedEl; // this is the cell that was clicked
 let selectedBugBodyEls = []; // this shows where the entire bug will be if placed
+let readyToPlace;
 
 
 /*----- event listeners -----*/
 startBtnEl.addEventListener('click', init);
+placeBtnEl.addEventListener('click', placeBug);
 playerGrid.addEventListener('click', handleGridClick);
 
 /*----- functions -----*/
@@ -88,6 +91,7 @@ function init() {
     deadComputerBugs = 0;
     deadPlayerBugs = 0;
     currentBug = PLACEMENT_ORDER[0];
+    readyToPlace = false;
     generateBoard(playerGrid);
     generateBoard(computerGrid);
 
@@ -125,7 +129,11 @@ function render() {
     } else {
         selectedEl.classList.add('unavailable');
     }
-
+    if(!readyToPlace) {
+        placeBtnEl.setAttribute('disabled', 'disabled');
+    } else {
+        placeBtnEl.removeAttribute('disabled');
+    }
     //TODO render previously placed bugs
     renderMessage();
 
@@ -154,7 +162,7 @@ function handleGridClick(e){
             //Once all bugs are placed, computer should place its bugs
 
         }
-        
+
     } else {
         // else... let's play the game
     }
@@ -175,40 +183,15 @@ function handleGridClick(e){
                     selectedCells.push([x, y+i]);
                     selectedBugBodyEls.push(document.getElementById(`${x}, ${y+i}`));                    
                 }
+                readyToPlace = true;
             } else {
                 selectedCells = [x,y];
                 selectedBugBodyEls = [];
                 gameMessage = "Not enough space. Click again to rotate or choose another location";
+                readyToPlace = false;
                 return false; // False means that bug can't be planned
             }
-            
         }
-            
-            // if(direction === 'h') {
-            //     //check that it doesn't go off board
-            //     if(hasRoom(x, BATTLEBUGS[bug].size) && noCollisions(x,y)){
-            //         selectedCells.push([x+i, y]);
-            //         selectedBugBodyEls.push(document.getElementById(`${x+i}, ${y}`));
-            //     } else {
-            //         selectedCells = [x,y];
-            //         selectedBugBodyEls = [];
-            //         gameMessage = "Not enough space. Click again to rotate or choose another location";
-            //         return false; // False means that bug can't be planned
-            //     }
-
-            // } else if (direction === "v"){
-            //     if(hasRoom(y, BATTLEBUGS[bug].size) && noCollisions(x,y)){
-            //         selectedCells.push([x+i, y]);
-            //         selectedBugBodyEls.push(document.getElementById(`${x+i}, ${y}`));
-            //     } else {
-            //         selectedCells = [x,y];
-            //         selectedBugBodyEls = [];
-            //         gameMessage = "Not enough space. Click again to rotate or choose another location";
-            //         return false; // False means that bug can't be planned
-            //     }
-            // }
-        
-        console.log(selectedCells);
         
         function hasRoom(x, y, bugSize){
             if(direction === "h"){
@@ -217,7 +200,7 @@ function handleGridClick(e){
                     return false
                 }
                 return true;
-                //check for bugs ... could be done in same if statement with || operator
+                //TODO check for bugs ... could be done in same if statement with || operator
             } else if (direction === "v") {
                 if(y + bugSize > GRID_SIZE) {
                     return false;
@@ -228,17 +211,17 @@ function handleGridClick(e){
         }
         
 
-        // function hasRoom(coord, bugSize){
-        //     if(coord + bugSize > 8){
-        //         return false;
-        //     }
-        //     return true;
-        // }
-
         function noCollisions(x,y){
             //TODO check for bug locations to make sure nothing is already placed
             return true
         }
+    }
+}
+
+function placeBug(e){
+    console.log('placing bug', readyToPlace);
+    if(!readyToPlace){
+        return;
     }
 }
 
