@@ -140,7 +140,6 @@ function render() {
     } else {
         placeBtnEl.removeAttribute('disabled');
     }
-    //TODO render previously placed bugs
     renderMessage();
 
 }
@@ -181,47 +180,64 @@ function handleGridClick(e){
         let x = parseInt(coordinates[0]);
         let y = parseInt(coordinates[1]);
         selectedBugBodyEls = [];
-        for(let i = 0; i< BATTLEBUGS[bug].size; i++){
-            if(hasRoom(x, y, BATTLEBUGS[bug].size)){
-                if(direction === "h"){
-                    selectedCells.push([x+i, y]);
-                    selectedBugBodyEls.push(document.getElementById(`${x+i}, ${y}`));                    
-                } else if (direction == "v"){
-                    selectedCells.push([x, y+i]);
-                    selectedBugBodyEls.push(document.getElementById(`${x}, ${y+i}`));                    
-                }
-                readyToPlace = true;
-            } else {
-                selectedCells = [x,y];
-                selectedBugBodyEls = [];
-                gameMessage = "Not enough space. Click again to rotate or choose another location";
-                readyToPlace = false;
-                return false; // False means that bug can't be planned
-            }
+
+        if(hasRoom(x,y, BATTLEBUGS[bug].size)){
+            readyToPlace = true;
+            gameMessage = "";
+        } else {
+            selectedCells = [x,y];
+            selectedBugBodyEls = [];
+            gameMessage = "Not enough space. Click again to rotate or choose another location";
+            readyToPlace = false;
+            return false; // False means that bug can't be planned
         }
+
         
         function hasRoom(x, y, bugSize){
-            if(direction === "h"){
-                //check for overflow
-                if(x + bugSize > GRID_SIZE + 1){
-                    return false
+            //check overflow first since it only happens once, then for each spot check for collision
+            if(direction === "h"){ 
+                if(x + bugSize > GRID_SIZE + 1) {
+                    return false;
                 }
-                return true;
-                //TODO check for bugs ... could be done in same if statement with || operator
             } else if (direction === "v") {
                 if(y + bugSize > GRID_SIZE + 1) {
                     return false;
                 }
+            }
+
+            for(let i = 0; i< BATTLEBUGS[bug].size; i++){
+                //check for overflow
+                if(direction === "h"){ 
+                    if(!noCollisions(x+i,y)){
+                        return false;
+                    }
+                    selectedCells.push([x+i, y]);
+                    selectedBugBodyEls.push(document.getElementById(`${x+i}, ${y}`));
+                } else if (direction === "v"){
+                    if(!noCollisions(x,y+i)){
+                        return false;
+                    }
+                    selectedCells.push([x, y+i]);
+                    selectedBugBodyEls.push(document.getElementById(`${x}, ${y+i}`));
+                }
+            }
+
+
+            function noCollisions(x,y){
+                for(let i = 0; i < currentBug; i++ ){
+                    let placedBug = bugLocations.player[PLACEMENT_ORDER[i]];
+                    placedBug = bugLocations.player[PLACEMENT_ORDER[i]];
+                    for(let c = 0; c < placedBug.length; c++){
+                        if(placedBug[c][0] === x && placedBug[c][1] === y ){
+                            return false;
+                        }
+                    }
+                }
                 return true;
             }
-            return false;
+            return true;
         }
         
-
-        function noCollisions(x,y){
-            //TODO check for bug locations to make sure nothing is already placed
-            return true
-        }
     }
 }
 
@@ -230,7 +246,7 @@ function placeBug(e){
     if(!readyToPlace){
         return;
     }
-    bugLocations.player[currentBug] =  selectedCells;
+    bugLocations.player[PLACEMENT_ORDER[currentBug]] =  selectedCells.map((x) => x);
     console.log(bugLocations);
     currentBug++;
     render();
