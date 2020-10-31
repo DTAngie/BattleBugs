@@ -249,6 +249,12 @@ function placeBug(e){
     bugLocations.player[PLACEMENT_ORDER[currentBug]] =  selectedCells.map((x) => x);
     console.log(bugLocations);
     currentBug++;
+    if(currentBug === PLACEMENT_ORDER.length){//all bugs are placed
+        bugsPlaced = true;
+        gameMessage = "Your bugs have been placed. Waiting for computer."
+        //TODO add a delay so that even after computer does the turn it waits a while to simulate thinking
+        computerMove(); //this should be an async function so that render below happens first and then computerMove does
+    }
     render();
     //TODO When all pbugs are placed it's time for computer to place bugs.
 }
@@ -262,8 +268,15 @@ function renderMessage(){
     }
 }
 
+async function computerMove(){
+    console.log('inside computers brain');
+    setTimeout(function(){
+        gameMessage = "Async working";
+        render();
+    }, 5000);
+}
+
 // TODO: 
-// player choose placement
 // computer choose placement
 // player makes guesses
 // computer makes guesses
