@@ -62,7 +62,7 @@ let readyToPlace;
 
 /*----- event listeners -----*/
 startBtnEl.addEventListener('click', init);
-placeBtnEl.addEventListener('click', placeBug);
+placeBtnEl.addEventListener('click', placeBug, "player"); /// I need to pass the player parameter in here
 playerGrid.addEventListener('click', handleGridClick);
 
 /*----- functions -----*/
@@ -145,6 +145,10 @@ function render() {
 }
 
 function handleGridClick(e){
+    // if(e.target.labelName !== "")
+    if(!e.target.classList.contains('grid-cell')) {
+        return;
+    };
     //If bugs have not been placed, let's place them
     if(!bugsPlaced){
         console.log(currentBug);
@@ -152,7 +156,7 @@ function handleGridClick(e){
         if(e.target === selectedEl) { //if you are clicking on the same spot
             //rotate the selection
             direction = (direction === "h") ? "v" : "h";
-            planBug(PLACEMENT_ORDER[currentBug], selectedEl);
+            planBug(PLACEMENT_ORDER[currentBug], selectedEl.id, "player");
         } else { //if you are clicking on a different spot
             direction = "h";
             selectedBugBodyEls = [];
@@ -161,7 +165,7 @@ function handleGridClick(e){
             //Default direction will be to the right, if bug doesn't run off edge of board or hit another bug
             //show it...else gray out the selection
             direction = "h"; //values will be v or h
-            planBug(PLACEMENT_ORDER[currentBug], selectedEl);
+            planBug(PLACEMENT_ORDER[currentBug], selectedEl.id, "player");
             
             console.log(PLACEMENT_ORDER[currentBug]);
             //Player can either click on cell to rotate bug or click a different cell to place it there
@@ -175,8 +179,8 @@ function handleGridClick(e){
     }
     render();
 
-    function planBug(bug, cell){
-        let coordinates = cell.id.split(", ");
+    function planBug(bug, cell, planner){
+        let coordinates = cell.split(", ");
         let x = parseInt(coordinates[0]);
         let y = parseInt(coordinates[1]);
         selectedBugBodyEls = [];
@@ -225,8 +229,8 @@ function handleGridClick(e){
 
             function noCollisions(x,y){
                 for(let i = 0; i < currentBug; i++ ){
-                    let placedBug = bugLocations.player[PLACEMENT_ORDER[i]];
-                    placedBug = bugLocations.player[PLACEMENT_ORDER[i]];
+                    let placedBug = bugLocations[planner][PLACEMENT_ORDER[i]];
+                    placedBug = bugLocations[planner][PLACEMENT_ORDER[i]];
                     for(let c = 0; c < placedBug.length; c++){
                         if(placedBug[c][0] === x && placedBug[c][1] === y ){
                             return false;
@@ -241,20 +245,23 @@ function handleGridClick(e){
     }
 }
 
-function placeBug(e){
+function placeBug(planner){
     console.log('placing bug', readyToPlace);
     if(!readyToPlace){
         return;
     }
-    bugLocations.player[PLACEMENT_ORDER[currentBug]] =  selectedCells.map((x) => x);
+    bugLocations[planner][PLACEMENT_ORDER[currentBug]] =  selectedCells.map((x) => x);
     console.log(bugLocations);
     currentBug++;
     if(currentBug === PLACEMENT_ORDER.length){//all bugs are placed
         bugsPlaced = true;
+        readyToPlace = false;
         gameMessage = "Your bugs have been placed. Waiting for computer."
         //TODO add a delay so that even after computer does the turn it waits a while to simulate thinking
+        currentBug = 0;
         computerMove(); //this should be an async function so that render below happens first and then computerMove does
     }
+    console.log('hopeflly thi hapens furt');
     render();
     //TODO When all pbugs are placed it's time for computer to place bugs.
 }
@@ -269,7 +276,45 @@ function renderMessage(){
 }
 
 async function computerMove(){
-    console.log('inside computers brain');
+    //Iterate through each of the placement order
+
+    //randomly choose direction
+    //choose cell at random (x or y must be less than bug length)
+    //check for collision, if collision,rotate and test again...if still collision choose another location than choose another random location
+    //place bug
+    //when all bugs are placed trigger game start
+    console.log('123');
+
+    let computerStatus = await doneMoving();
+    if (doneMoving) {
+        console.log("done moving");
+        gameMessage = "Computer finished. Let's play"; // This may need to be moved elsewhere if it takes a little bit of time
+        render();
+    }
+
+    function doneMoving(){
+        //Choose the direction
+        let randomDirection = (Math.ceil(Math.random()*2) === 1) ? "h" : "v";
+        if(randomDirection === "h"){
+            let randomX = Math.floor(Math.random()*(GRID_SIZE - bugSize + 1));
+            let randomY = Math.floor(Math.random()* (GRID_SIZE));
+            if(planBug(PLACEMENT_ORDER[currentBug], [randomX, randomY], "computer")){
+                console.log("spot is safe");
+            } else {
+                console.log('computer collisio!');
+            }
+            if(!noCollisions){
+                return "there was a computer collision";
+            } else {
+                placeBug(computer)
+            }
+        } else if (randomDirection === "v"){
+
+        }
+        return true;
+    }
+    // for(let i)
+    
     setTimeout(function(){
         gameMessage = "Async working";
         render();
