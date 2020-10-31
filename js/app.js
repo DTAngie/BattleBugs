@@ -48,6 +48,7 @@ let selectedCells = []; // this will be for placement
 let currentBug; //This will be the bug that the player is currently placing, notated by index number
 let gameMessage;
 let direction;
+let currentTurn;
 
 /*----- cached element references -----*/
 const startBtnEl = document.getElementById('start');
@@ -62,7 +63,7 @@ let readyToPlace;
 
 /*----- event listeners -----*/
 startBtnEl.addEventListener('click', init);
-placeBtnEl.addEventListener('click', placeBug, "player"); /// I need to pass the player parameter in here
+placeBtnEl.addEventListener('click', placeBug); /// I need to pass the player parameter in here
 playerGrid.addEventListener('click', handleGridClick);
 
 /*----- functions -----*/
@@ -92,11 +93,12 @@ function init() {
     deadPlayerBugs = 0;
     currentBug = 0;
     readyToPlace = false;
-    generateBoard(playerGrid);
-    generateBoard(computerGrid);
+    generateBoard(playerGrid, "player");
+    generateBoard(computerGrid, "computer");
+    currentTurn = "player";
 
 
-    function generateBoard(grid){
+    function generateBoard(grid, user){
         grid = grid.querySelector('div');
         grid.innerHTML = "";
         for(let r = GRID_SIZE; r > 0; r --){ // create the rows
@@ -107,7 +109,7 @@ function init() {
             for(c = 1; c < GRID_SIZE + 1; c ++) { // create the cells
                 const cell = document.createElement('div');
                 cell.setAttribute('class', 'grid-cell');
-                cell.setAttribute('id', `${c}, ${r}`);
+                cell.setAttribute('id', `${c}, ${r}, ${user}`);
                 row.appendChild(cell);
             }
         }
@@ -122,6 +124,7 @@ function render() {
     }
 
     if(selectedBugBodyEls.length > 0){
+        console.log(selectedBugBodyEls);
         selectedBugBodyEls.forEach(function(cell){
             cell.classList.add('selected');
         });
@@ -131,7 +134,7 @@ function render() {
     //Render placed bugs
     for(let bug in bugLocations.player) {
         bugLocations.player[bug].forEach(function(point){
-            let occupiedCell = document.getElementById(`${point[0]}, ${point[1]}`);
+            let occupiedCell = document.getElementById(`${point[0]}, ${point[1]}, ${currentTurn}`);
             occupiedCell.classList.add('placed');
         });
     }
@@ -179,87 +182,105 @@ function handleGridClick(e){
     }
     render();
 
-    function planBug(bug, cell, planner){
-        let coordinates = cell.split(", ");
-        let x = parseInt(coordinates[0]);
-        let y = parseInt(coordinates[1]);
-        selectedBugBodyEls = [];
-
-        if(hasRoom(x,y, BATTLEBUGS[bug].size)){
-            readyToPlace = true;
-            gameMessage = "";
-        } else {
-            selectedCells = [x,y];
+}
+        function planBug(bug, cell, planner){
+            let coordinates = cell.split(", ");
+            let x = parseInt(coordinates[0]);
+            let y = parseInt(coordinates[1]);
             selectedBugBodyEls = [];
-            gameMessage = "Not enough space. Click again to rotate or choose another location";
-            readyToPlace = false;
-            return false; // False means that bug can't be planned
-        }
-
-        
-        function hasRoom(x, y, bugSize){
-            //check overflow first since it only happens once, then for each spot check for collision
-            if(direction === "h"){ 
-                if(x + bugSize > GRID_SIZE + 1) {
-                    return false;
-                }
-            } else if (direction === "v") {
-                if(y + bugSize > GRID_SIZE + 1) {
-                    return false;
-                }
+            console.log(cell);
+            console.log(coordinates);
+            console.log('checking x', x);
+            if(hasRoom(x,y, BATTLEBUGS[bug].size)){
+                readyToPlace = true;
+                gameMessage = "";
+            } else {
+                selectedCells = [x,y];
+                selectedBugBodyEls = [];
+                gameMessage = "Not enough space. Click again to rotate or choose another location";
+                readyToPlace = false;
+                return false; // False means that bug can't be planned
             }
+            console.log('computer has room');
 
-            for(let i = 0; i< BATTLEBUGS[bug].size; i++){
-                //check for overflow
+            
+            function hasRoom(x, y, bugSize){
+                //check overflow first since it only happens once, then for each spot check for collision
                 if(direction === "h"){ 
-                    if(!noCollisions(x+i,y)){
+                    if(x + bugSize > GRID_SIZE + 1) {
                         return false;
                     }
-                    selectedCells.push([x+i, y]);
-                    selectedBugBodyEls.push(document.getElementById(`${x+i}, ${y}`));
-                } else if (direction === "v"){
-                    if(!noCollisions(x,y+i)){
+                } else if (direction === "v") {
+                    if(y + bugSize > GRID_SIZE + 1) {
                         return false;
                     }
-                    selectedCells.push([x, y+i]);
-                    selectedBugBodyEls.push(document.getElementById(`${x}, ${y+i}`));
                 }
-            }
-
-
-            function noCollisions(x,y){
-                for(let i = 0; i < currentBug; i++ ){
-                    let placedBug = bugLocations[planner][PLACEMENT_ORDER[i]];
-                    placedBug = bugLocations[planner][PLACEMENT_ORDER[i]];
-                    for(let c = 0; c < placedBug.length; c++){
-                        if(placedBug[c][0] === x && placedBug[c][1] === y ){
+                
+                for(let i = 0; i< BATTLEBUGS[bug].size; i++){
+                    console.log('checking truncation');
+                    console.log(bug);
+                    console.log(BATTLEBUGS[bug].size);
+                    console.log('x is ', x, 'and i is ', i);
+                    //check for overflow
+                    if(direction === "h"){ 
+                        if(!noCollisions(x+i,y)){
+                            console.log('checking for collision returned true');
                             return false;
                         }
+                        selectedCells.push([x+i, y]);
+                        selectedBugBodyEls.push(document.getElementById(`${x+i}, ${y}, ${currentTurn}`));
+                        console.log('no collission happened');
+                        console.log(selectedBugBodyEls);
+                    } else if (direction === "v"){
+                        if(!noCollisions(x,y+i)){
+                            return false;
+                        }
+                        selectedCells.push([x, y+i]);
+                        selectedBugBodyEls.push(document.getElementById(`${x}, ${y+i}, ${currentTurn}`));
                     }
+                }
+    
+    
+                function noCollisions(x,y){
+                    for(let i = 0; i < currentBug; i++ ){
+                        let placedBug = bugLocations[currentTurn][PLACEMENT_ORDER[i]];
+                        for(let c = 0; c < placedBug.length; c++){
+                            if(placedBug[c][0] === x && placedBug[c][1] === y ){
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
                 }
                 return true;
             }
             return true;
+            
         }
-        
-    }
-}
 
-function placeBug(planner){
+function placeBug(){
     console.log('placing bug', readyToPlace);
+    console.log(bugsPlaced);
+    if(bugsPlaced){
+     return; // TODO: trigger game start here   
+    }
     if(!readyToPlace){
         return;
     }
-    bugLocations[planner][PLACEMENT_ORDER[currentBug]] =  selectedCells.map((x) => x);
+    console.log(selectedCells);
+
+    bugLocations[currentTurn][PLACEMENT_ORDER[currentBug]] =  selectedCells.map((x) => x);
     console.log(bugLocations);
     currentBug++;
-    if(currentBug === PLACEMENT_ORDER.length){//all bugs are placed
-        bugsPlaced = true;
+    if(currentTurn === "player" && currentBug === PLACEMENT_ORDER.length){//all player bugs are placed
+        // bugsPlaced = true;
         readyToPlace = false;
         gameMessage = "Your bugs have been placed. Waiting for computer."
         //TODO add a delay so that even after computer does the turn it waits a while to simulate thinking
         currentBug = 0;
-        computerMove(); //this should be an async function so that render below happens first and then computerMove does
+        currentTurn = "computer";
+        selectedCells = [];
+        computerPlacement(); //this should be an async function so that render below happens first and then computerMove does
     }
     console.log('hopeflly thi hapens furt');
     render();
@@ -275,7 +296,7 @@ function renderMessage(){
     }
 }
 
-async function computerMove(){
+async function computerPlacement(){
     //Iterate through each of the placement order
 
     //randomly choose direction
@@ -294,23 +315,31 @@ async function computerMove(){
 
     function doneMoving(){
         //Choose the direction
+        bugSize =5; //Remove this hard code and replace with variable for loop
         let randomDirection = (Math.ceil(Math.random()*2) === 1) ? "h" : "v";
+        randomDirection = "h"; //Delete this comment after test
         if(randomDirection === "h"){
             let randomX = Math.floor(Math.random()*(GRID_SIZE - bugSize + 1));
             let randomY = Math.floor(Math.random()* (GRID_SIZE));
-            if(planBug(PLACEMENT_ORDER[currentBug], [randomX, randomY], "computer")){
+            console.log(randomX, " ", randomY);
+            if(planBug(PLACEMENT_ORDER[currentBug], `${randomX}, ${randomY}`, "computer")){
+                placeBug();
                 console.log("spot is safe");
             } else {
                 console.log('computer collisio!');
             }
-            if(!noCollisions){
-                return "there was a computer collision";
-            } else {
-                placeBug(computer)
-            }
+            // if(!noCollisions()){
+            //     console.log( "there was a computer collision");
+            //     return false;
+            // } else {
+            //     console.log('no collision');
+            //     // placeBug(computer)
+            // }
         } else if (randomDirection === "v"){
 
         }
+        currentTurn = "player";
+        bugsPlaced = true;
         return true;
     }
     // for(let i)
