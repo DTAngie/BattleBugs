@@ -36,3 +36,11 @@
 .grid-cell.placed {
     background-color: green;
 }
+
+.grid-cell.hit {
+    background-color: red;
+}
+
+.grid-cell.missed {
+    background-color: aqua;
+}

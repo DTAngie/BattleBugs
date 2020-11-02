@@ -163,6 +163,33 @@ function render() {
             occupiedCell.classList.add('placed');
         });
     }
+    //Render hits and misses
+    if(bugsPlaced){
+        hits.player.bugCells.forEach(function(point){
+            let hitCell = document.getElementById(`${point[0]}, ${point[1]}, computer`);
+            hitCell.classList.add('hit');
+        });
+
+
+        hits.player.emptyCells.forEach(function(point){
+            let hitCell = document.getElementById(`${point[0]}, ${point[1]}, computer`);
+            hitCell.classList.add('missed');
+        });
+
+
+        hits.computer.bugCells.forEach(function(point){
+            let hitCell = document.getElementById(`${point[0]}, ${point[1]}, player`);
+            hitCell.classList.add('hit');
+        });
+
+
+        hits.computer.emptyCells.forEach(function(point){
+            let hitCell = document.getElementById(`${point[0]}, ${point[1]}, player`);
+            hitCell.classList.add('missed');
+        });
+
+    }
+    
     if(!readyToPlace) {
         placeBtnEl.setAttribute('disabled', 'disabled');
     } else {
@@ -205,6 +232,7 @@ function handlePlayerGridClick(e){
 }
 
 function handleComputerGridClick(e){
+    //TODO check to make sure cell wasn't clicked before...no use wasting missiles!
     if(!e.target.classList.contains('grid-cell') || currentTurn !== "player") {
         return;
     };
@@ -321,7 +349,6 @@ function fireShot(offense, cell){
     let coordinates = cell.split(", ");
     let x = parseInt(coordinates[0]);
     let y = parseInt(coordinates[1]);
-    let defense = (offense === "player") ? "computer" : "player";
     let hitData = hits[offense];
     // first add information to hit object
     //then check to see if cell is part of a ship
@@ -330,10 +357,9 @@ function fireShot(offense, cell){
     if(shipHit){
         hitData.bugCells.push([x,y]);
         hitData.shipsLeft[shipHit[0]].splice(shipHit[1], 1);
-        // hits[offense].shipsLeft
-        //Either push to empty cell or bug cell
-        // hits[offense].cells.push([x,y]);
-        
+        if(hitData.shipsLeft[shipHit[0]].length === 0){
+            delete hitData.shipsLeft[shipHit[0]];
+        }    
     } else {
         hitData.emptyCells.push([x,y]);
     }
@@ -344,28 +370,13 @@ function fireShot(offense, cell){
             console.log(ship);
             let index = 0;
             for(let point of hitData.shipsLeft[ship]){
-                // console.log("point is", point);
-                // console.log("x is ", x, "and y is", y);
                 if (point[0] === x && point[1] === y) {
                     return [ship, index];
                 }
                 index++;
             }
-            
-                
-            //     includes([x,y])){
-            //     return indexOf([x,y]);
-            // }
-            // for(let point of bugLocations[defense][ship]){ //iterate through each ship that 
-            //     if (point[0] === x && point[1] === y ){
-            //         return ship;
-            //     }
-            // }
         }
         return false;
-        // for(ships in bugLocations[defense]){
-            
-        // }
     }
             //if not successfull, change color of cell
             //if succesfful hit, change color of cell
