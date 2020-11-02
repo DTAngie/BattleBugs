@@ -51,14 +51,16 @@ let direction;
 let currentTurn;
 let hits = {
     player: {
-        cells: [], //this will hold the actual cells hit
-        shipsHit: [], // this will list opponents ships hit, this may not be needed so check if actually used
-        shipsLeft: [] // this will list opponents ships left to hit
+        emptyCells: [], //this will hold the actual cells hit
+        bugCells: [],
+        shipsHit: {}, // this will list opponents ships hit, this may not be needed so check if actually used
+        shipsLeft: {} // this will list opponents ships left to hit
     },
     computer: {
-        cells: [],
-        shipsHit: [],
-        shipsLeft: []
+        emptyCells: [],
+        bugCells: [],
+        shipsHit: {},
+        shipsLeft: {}
     }
 }
 
@@ -102,8 +104,8 @@ function init() {
         } // QUESTION: IS THERE A BETTER WAY TO INITIALIZE THIS? IT SEEMS REDUNDANT WITH APP 
         // STATE VARIABLES
     }
-    hits.player.shipsLeft = Object.keys(BATTLEBUGS);
-    hits.computer.shipsLeft = Object.keys(BATTLEBUGS);
+    // hits.player.shipsLeft = Object.keys(BATTLEBUGS);
+    // hits.computer.shipsLeft = Object.keys(BATTLEBUGS);
     deadComputerBugs = 0;
     deadPlayerBugs = 0;
     currentBug = 0;
@@ -292,8 +294,10 @@ function placeBug(){
     if(!readyToPlace){
         return;
     }
-
+    let opponent = (currentTurn === "player") ? "computer" : "player";
     bugLocations[currentTurn][PLACEMENT_ORDER[currentBug]] =  selectedCells.map((x) => x);
+    hits[opponent].shipsLeft[PLACEMENT_ORDER[currentBug]] = selectedCells.map((x) => x);
+    
     currentBug++;
     readyToPlace = false;
     //TODO the curent turn restriction may be able to be removed as well as the currentBug reset....computer is using the i variable
@@ -318,25 +322,45 @@ function fireShot(offense, cell){
     let x = parseInt(coordinates[0]);
     let y = parseInt(coordinates[1]);
     let defense = (offense === "player") ? "computer" : "player";
+    let hitData = hits[offense];
     // first add information to hit object
-    hits[offense].cells.push([x,y]);
     //then check to see if cell is part of a ship
     let shipHit = wasHit(x,y);
+    console.log(shipHit);
     if(shipHit){
-
+        hitData.bugCells.push([x,y]);
+        hitData.shipsLeft[shipHit[0]].splice(shipHit[1], 1);
+        // hits[offense].shipsLeft
+        //Either push to empty cell or bug cell
+        // hits[offense].cells.push([x,y]);
+        
     } else {
-
+        hitData.emptyCells.push([x,y]);
     }
 
     function wasHit(x, y){
         //Iterate through this array to save time as ships get 
-        for(let ship of hits[offense].shipsLeft){
+        for(let ship in hitData.shipsLeft){
             console.log(ship);
-            for(let point of bugLocations[defense][ship]){ //iterate through each ship that 
-                if (point[0] === x && point[1] === y ){
-                    return ship;
+            let index = 0;
+            for(let point of hitData.shipsLeft[ship]){
+                // console.log("point is", point);
+                // console.log("x is ", x, "and y is", y);
+                if (point[0] === x && point[1] === y) {
+                    return [ship, index];
                 }
+                index++;
             }
+            
+                
+            //     includes([x,y])){
+            //     return indexOf([x,y]);
+            // }
+            // for(let point of bugLocations[defense][ship]){ //iterate through each ship that 
+            //     if (point[0] === x && point[1] === y ){
+            //         return ship;
+            //     }
+            // }
         }
         return false;
         // for(ships in bugLocations[defense]){
