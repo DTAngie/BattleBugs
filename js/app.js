@@ -1,22 +1,22 @@
 /*----- constants -----*/
 const BATTLEBUGS = {
-    'Alpha': {
+    Alpha: {
         size: 2,
         image: "/linkToImage.png"
     },
-    'Beta': {
+    Beta: {
         size: 3,
         image: "/linkToImage.png"
     },
-    'Gamma': {
+    Gamma: {
         size: 3,
         image: "/linkToImage.png"
     },
-    'Delta': {
+    Delta: {
         size: 4,
         image: "/linkToImage.png"
     },
-    'Epsilon': {
+    Epsilon: {
         size: 5,
         image: "/linkToImage.png"
     }
@@ -26,21 +26,21 @@ const PLACEMENT_ORDER = Object.keys(BATTLEBUGS).reverse();
 const GRID_SIZE = 8;
 
 /*----- app's state (variables) -----*/
-let shotsFired, deadComputerBugs, deadPlayerBugs;
+let shotsLeft, deadComputerBugs, deadPlayerBugs;// the last two variables might not be needed
 let bugLocations = {
     player: {
-        'Alpha': [],
-        'Beta': [],
-        'Gamma': [],
-        'Delta': [],
-        'Epsilon': []
+        Alpha: [],
+        Beta: [],
+        Gamma: [],
+        Delta: [],
+        Epsilon: []
     },
     computer: {
-        'Alpha': [],
-        'Beta': [],
-        'Gamma': [],
-        'Delta': [],
-        'Epsilon': []
+        Alpha: [],
+        Beta: [],
+        Gamma: [],
+        Delta: [],
+        Epsilon: []
     } // This should hold an array of x,y coordinates
 } // This will be an object similar to the constant
 let bugsPlaced; // will be a true/false value to determine if game is ready to start
@@ -49,6 +49,18 @@ let currentBug; //This will be the bug that the player is currently placing, not
 let gameMessage;
 let direction;
 let currentTurn;
+let hits = {
+    player: {
+        cells: [], //this will hold the actual cells hit
+        shipsHit: [], // this will list ships hit
+        shipsLeft: [] // this will list ships left to hit
+    },
+    computer: {
+        cells: [],
+        shipsHit: [],
+        shipsLeft: []
+    }
+}
 
 /*----- cached element references -----*/
 const startBtnEl = document.getElementById('start');
@@ -64,7 +76,8 @@ let readyToPlace;
 /*----- event listeners -----*/
 startBtnEl.addEventListener('click', init);
 placeBtnEl.addEventListener('click', placeBug); /// I need to pass the player parameter in here
-playerGrid.addEventListener('click', handleGridClick);
+playerGrid.addEventListener('click', handlePlayerGridClick);
+computerGrid.addEventListener('click', handleComputerGridClick);
 
 /*----- functions -----*/
 init();
@@ -74,18 +87,18 @@ function init() {
     selectedCells = [];
     bugLocations = {
         player: {
-            'Alpha': [],
-            'Beta': [],
-            'Gamma': [],
-            'Delta': [],
-            'Epsilon': []
+            Alpha: [],
+            Beta: [],
+            Gamma: [],
+            Delta: [],
+            Epsilon: []
         },
         computer: {
-            'Alpha': [],
-            'Beta': [],
-            'Gamma': [],
-            'Delta': [],
-            'Epsilon': []
+            Alpha: [],
+            Beta: [],
+            Gamma: [],
+            Delta: [],
+            Epsilon: []
         } // QUESTION: IS THERE A BETTER WAY TO INITIALIZE THIS? IT SEEMS REDUNDANT WITH APP 
         // STATE VARIABLES
     }
@@ -96,6 +109,8 @@ function init() {
     generateBoard(playerGrid, "player");
     generateBoard(computerGrid, "computer");
     currentTurn = "player";
+    gameMessage = "";
+    shotsLeft = MAX_SHOTS;
 
 
     function generateBoard(grid, user){
@@ -113,6 +128,7 @@ function init() {
             }
         }
     }
+    renderMessage();
 }
 
 function render() {
@@ -149,12 +165,12 @@ function render() {
         placeBtnEl.removeAttribute('disabled');
     }
     renderMessage();
-
+    //Remove below...it's just for quick testing
+    document.getElementById('test-shots').innerText = `${shotsLeft} shot left out of ${MAX_SHOTS}`;
 }
 
-function handleGridClick(e){
-    // if(e.target.labelName !== "")
-    if(!e.target.classList.contains('grid-cell')) {
+function handlePlayerGridClick(e){
+    if(!e.target.classList.contains('grid-cell') || currentTurn !== "player") {
         return;
     };
     //If bugs have not been placed, let's place them
@@ -171,84 +187,100 @@ function handleGridClick(e){
             //Get current bug that needs to be placed, and it's length
             //Default direction will be to the right, if bug doesn't run off edge of board or hit another bug
             //show it...else gray out the selection
-            direction = "h"; //values will be v or h
             planBug(PLACEMENT_ORDER[currentBug], selectedEl.id, "player");
             
             //Player can either click on cell to rotate bug or click a different cell to place it there
     
             //Once all bugs are placed, computer should place its bugs
-
         }
-
     } else {
+        gameMessage = "Click on the the computer grid to take a shot";
         // else... let's play the game
     }
     render();
-
 }
-        function planBug(bug, cell, planner){
-            let coordinates = cell.split(", ");
-            let x = parseInt(coordinates[0]);
-            let y = parseInt(coordinates[1]);
-            selectedBugBodyEls = [];
-            if(hasRoom(x,y, BATTLEBUGS[bug].size)){
-                readyToPlace = true;
-                gameMessage = "";
-            } else {
-                selectedCells = [x,y];
-                selectedBugBodyEls = [];
-                gameMessage = "Not enough space. Click again to rotate or choose another location";
-                readyToPlace = false;
-                return false; // False means that bug can't be planned
-            }
 
-            
-            function hasRoom(x, y, bugSize){
-                //check overflow first since it only happens once, then for each spot check for collision
-                if(direction === "h"){ 
-                    if(x + bugSize > GRID_SIZE + 1) {
+function handleComputerGridClick(e){
+    if(!e.target.classList.contains('grid-cell') || currentTurn !== "player") {
+        return;
+    };
+    if(!bugsPlaced){
+        gameMessage = " Place your bugs on the player grid."
+    } else {
+        //This is where the the turns start!!
+        console.log("it is now", currentTurn, "'s turn");
+        selectedCells = []; // this may not be used, so if not, you can take this out
+        if(shotsLeft !== 0){
+            let attackedCell = e.target.id; 
+            fireShot("player", attackedCell);
+        }
+    }
+    render();
+}
+
+function planBug(bug, cell, planner){
+    let coordinates = cell.split(", ");
+    let x = parseInt(coordinates[0]);
+    let y = parseInt(coordinates[1]);
+    selectedBugBodyEls = [];
+    if(hasRoom(x,y, BATTLEBUGS[bug].size)){
+        readyToPlace = true;
+        gameMessage = "";
+    } else {
+        selectedCells = [x,y];
+        selectedBugBodyEls = [];
+        gameMessage = "Not enough space. Click again to rotate or choose another location";
+        readyToPlace = false;
+        return false; // False means that bug can't be planned
+    }
+
+    
+    function hasRoom(x, y, bugSize){
+        //check overflow first since it only happens once, then for each spot check for collision
+        if(direction === "h"){ 
+            if(x + bugSize > GRID_SIZE + 1) {
+                return false;
+            }
+        } else if (direction === "v") {
+            if(y + bugSize > GRID_SIZE + 1) {
+                return false;
+            }
+        }
+        
+        for(let i = 0; i< BATTLEBUGS[bug].size; i++){
+            //check for overflow
+            if(direction === "h"){ 
+                if(!noCollisions(x+i,y)){
+                    return false;
+                }
+                selectedCells.push([x+i, y]);
+                selectedBugBodyEls.push(document.getElementById(`${x+i}, ${y}, ${currentTurn}`));
+            } else if (direction === "v"){
+                if(!noCollisions(x,y+i)){
+                    return false;
+                }
+                selectedCells.push([x, y+i]);
+                selectedBugBodyEls.push(document.getElementById(`${x}, ${y+i}, ${currentTurn}`));
+            }
+        }
+
+
+        function noCollisions(x,y){
+            for(let i = 0; i < currentBug; i++ ){
+                let placedBug = bugLocations[currentTurn][PLACEMENT_ORDER[i]];
+                for(let c = 0; c < placedBug.length; c++){
+                    if(placedBug[c][0] === x && placedBug[c][1] === y ){
                         return false;
                     }
-                } else if (direction === "v") {
-                    if(y + bugSize > GRID_SIZE + 1) {
-                        return false;
-                    }
                 }
-                
-                for(let i = 0; i< BATTLEBUGS[bug].size; i++){
-                    //check for overflow
-                    if(direction === "h"){ 
-                        if(!noCollisions(x+i,y)){
-                            return false;
-                        }
-                        selectedCells.push([x+i, y]);
-                        selectedBugBodyEls.push(document.getElementById(`${x+i}, ${y}, ${currentTurn}`));
-                    } else if (direction === "v"){
-                        if(!noCollisions(x,y+i)){
-                            return false;
-                        }
-                        selectedCells.push([x, y+i]);
-                        selectedBugBodyEls.push(document.getElementById(`${x}, ${y+i}, ${currentTurn}`));
-                    }
-                }
-    
-    
-                function noCollisions(x,y){
-                    for(let i = 0; i < currentBug; i++ ){
-                        let placedBug = bugLocations[currentTurn][PLACEMENT_ORDER[i]];
-                        for(let c = 0; c < placedBug.length; c++){
-                            if(placedBug[c][0] === x && placedBug[c][1] === y ){
-                                return false;
-                            }
-                        }
-                    }
-                    return true;
-                }
-                return true;
             }
             return true;
-            
         }
+        return true;
+    }
+    return true;
+    
+}
 
 function placeBug(){
     //TODO this may be redundant, you can trigger game after computer places bugs
@@ -261,6 +293,7 @@ function placeBug(){
 
     bugLocations[currentTurn][PLACEMENT_ORDER[currentBug]] =  selectedCells.map((x) => x);
     currentBug++;
+    readyToPlace = false;
     //TODO the curent turn restriction may be able to be removed as well as the currentBug reset....computer is using the i variable
     //for iterations
     if(currentTurn === "player" && currentBug === PLACEMENT_ORDER.length){//all player bugs are placed
@@ -277,6 +310,22 @@ function placeBug(){
     //TODO When all pbugs are placed it's time for computer to place bugs.
 }
 
+function fireShot(offense, cell){
+    console.log("firing");
+    let coordinates = cell.split(", ");
+    let x = parseInt(coordinates[0]);
+    let y = parseInt(coordinates[1]);
+    // first add information to hit object
+    hits[offense].cells.push([x,y]);
+            //then check to see if cell is part of a ship
+            //if not successfull, change color of cell
+            //if succesfful hit, change color of cell
+            //if all cells of a ship have been hit, update the object
+            //decrement number of shots by one.
+    shotsLeft--;
+    render();
+            //when all shots are taken, change turns
+}
 
 function renderMessage(){
     if(gameMessage){
@@ -297,7 +346,7 @@ async function computerPlacement(){
 
     let computerStatus = await doneMoving();
     if (doneMoving) {
-        gameMessage = "Computer finished. Let's play"; // This may need to be moved elsewhere if it takes a little bit of time
+        gameMessage = "Computer is placing bugs."; // This may need to be moved elsewhere if it takes a little bit of time
         render();
     }
 
@@ -309,10 +358,10 @@ async function computerPlacement(){
             makeSelection();
 
             function makeSelection(){
-                let randomDirection = (Math.ceil(Math.random()*2) === 1) ? "h" : "v";
+                direction = (Math.ceil(Math.random()*10) > 5) ? "h" : "v";
                 selectedBugBodyEls = [];
                 selectedCells = [];
-                if(randomDirection === "h"){
+                if(direction === "h"){
                     let randomX = Math.ceil(Math.random()*(GRID_SIZE - bugSize + 1));
                     let randomY = Math.ceil(Math.random()* (GRID_SIZE));
                     if(planBug(PLACEMENT_ORDER[i], `${randomX}, ${randomY}`, "computer")){
@@ -321,10 +370,11 @@ async function computerPlacement(){
                         makeSelection();
                     }
 
-                } else if (randomDirection === "v"){
+                } else if (direction === "v"){
                     let randomX = Math.ceil(Math.random()*(GRID_SIZE));
                     let randomY = Math.ceil(Math.random()* (GRID_SIZE - bugSize + 1));
                     if(planBug(PLACEMENT_ORDER[i], `${randomX}, ${randomY}`, "computer")){
+                        
                         placeBug();
                     } else {
                         makeSelection();
@@ -335,22 +385,24 @@ async function computerPlacement(){
             
                 render(); // TODO take this out after test
         }
-        currentTurn = "player";
-        bugsPlaced = true;
         return true;
     }
     // for(let i)
     
     setTimeout(function(){
-        gameMessage = "Async working";
+        //This gives the illusion of the computer thinking.
+        gameMessage = "Computer Finished. Let's play";
+        currentTurn = "player";
+        bugsPlaced = true;
         render();
     }, 5000);
 }
 
 // TODO: 
-// computer choose placement
 // player makes guesses
 // computer makes guesses
 // determine when ship is sunk and display image
 // determine winner
+//display images of bugs on board as well as bugs left and shots left
+//if time permits, make the bugLocations a private variable so that people can't see them.
 //remove all console logs

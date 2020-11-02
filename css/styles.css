@@ -1,3 +1,6 @@
+/*------ General Styling ------*/
+
+/*------ The Gameboard ------*/
 #game-board {
     display: grid;
     grid-template: 1fr 4fr/1fr 1fr;
@@ -33,4 +36,3 @@
 .grid-cell.placed {
     background-color: green;
 }
-
