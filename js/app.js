@@ -52,8 +52,8 @@ let currentTurn;
 let hits = {
     player: {
         cells: [], //this will hold the actual cells hit
-        shipsHit: [], // this will list ships hit
-        shipsLeft: [] // this will list ships left to hit
+        shipsHit: [], // this will list opponents ships hit, this may not be needed so check if actually used
+        shipsLeft: [] // this will list opponents ships left to hit
     },
     computer: {
         cells: [],
@@ -102,6 +102,8 @@ function init() {
         } // QUESTION: IS THERE A BETTER WAY TO INITIALIZE THIS? IT SEEMS REDUNDANT WITH APP 
         // STATE VARIABLES
     }
+    hits.player.shipsLeft = Object.keys(BATTLEBUGS);
+    hits.computer.shipsLeft = Object.keys(BATTLEBUGS);
     deadComputerBugs = 0;
     deadPlayerBugs = 0;
     currentBug = 0;
@@ -315,9 +317,32 @@ function fireShot(offense, cell){
     let coordinates = cell.split(", ");
     let x = parseInt(coordinates[0]);
     let y = parseInt(coordinates[1]);
+    let defense = (offense === "player") ? "computer" : "player";
     // first add information to hit object
     hits[offense].cells.push([x,y]);
-            //then check to see if cell is part of a ship
+    //then check to see if cell is part of a ship
+    let shipHit = wasHit(x,y);
+    if(shipHit){
+
+    } else {
+
+    }
+
+    function wasHit(x, y){
+        //Iterate through this array to save time as ships get 
+        for(let ship of hits[offense].shipsLeft){
+            console.log(ship);
+            for(let point of bugLocations[defense][ship]){ //iterate through each ship that 
+                if (point[0] === x && point[1] === y ){
+                    return ship;
+                }
+            }
+        }
+        return false;
+        // for(ships in bugLocations[defense]){
+            
+        // }
+    }
             //if not successfull, change color of cell
             //if succesfful hit, change color of cell
             //if all cells of a ship have been hit, update the object
