@@ -452,7 +452,7 @@ async function computerPlacement(){
             currentTurn = "player";
             bugsPlaced = true;
             render();
-        }, 5000);
+        }, 4000);
     }
 
     function doneMoving(){
@@ -505,7 +505,7 @@ async function computerShots() {
             currentTurn = "player";
             shotsLeft = MAX_SHOTS; //TODO remove this once computer can decrement it's count...this is redundant
             render();
-        }, 5000);
+        }, 4000);
     }
 
     function doneShooting(){
@@ -528,12 +528,17 @@ async function computerShots() {
                 return b.length - a.length;
             }); // Sorts the array by length
 
-            //If all spots are empty, choose direction at random
-            if(possibilities.length === 0){
-                let randomDirection = Math.ceil(Math.random()*4);
+            //If all surrounding spots are empty, choose direction at random
+            if(possibilities[0].length === possibilities[possibilities.length-1].length){
+                let availableOptions = [];
+                for(let i = 0; i < possibilities.length; i++){
+                    availableOptions.push(possibilities[i][0]);
+                }
+                let randomDirection = availableOptions[Math.floor(Math.random()*availableOptions.length)];
                 let shot = makeGuess(randomDirection, lastX, lastY);
                 fireShot("computer", `${shot[0]}, ${shot[1]}`);
-            }
+            }// Now check for multiple options
+            // if(possibilities[0].length === poss)
 
             //If one adjacent spot is a hit, then flip a coin to determine to go one direction or another
             //left/right or up/down
@@ -546,7 +551,7 @@ async function computerShots() {
                 let endOfLine = false;
                 //Check left
                 while((origin[0] - counter) > 0 && !endOfLine){
-                    let left = document.getElementById(`${origin[0] - counter}, ${origin[1]}, computer`);
+                    let left = document.getElementById(`${origin[0] - counter}, ${origin[1]}, player`);
                     if(left.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
                         possCells = [];
                         endOfLine = true;
@@ -554,6 +559,7 @@ async function computerShots() {
                         possCells.push([(origin[0] - counter),origin[1]]);
                         counter++;
                     } else {
+                        possCells.push([(origin[0] - counter),origin[1]]);
                         endOfLine = true;
                     }
                 }
@@ -562,10 +568,11 @@ async function computerShots() {
                     returnArray.push(possCells);
                     possCells = [];
                 }
+                endOfLine = false;
                 counter = 1;
                 //Check right
                 while((origin[0] + counter) <= GRID_SIZE && !endOfLine){
-                    let right = document.getElementById(`${origin[0] + counter}, ${origin[1]}, computer`);
+                    let right = document.getElementById(`${origin[0] + counter}, ${origin[1]}, player`);
                     if(right.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
                         possCells = [];
                         endOfLine = true;
@@ -573,6 +580,7 @@ async function computerShots() {
                         possCells.push([(origin[0] + counter),origin[1]]);
                         counter++;
                     } else {
+                        possCells.push([(origin[0] + counter),origin[1]]);
                         endOfLine = true;
                     }
                 }
@@ -581,11 +589,12 @@ async function computerShots() {
                     returnArray.push(possCells);
                     possCells = [];
                 }
+                endOfLine = false;
                 counter = 1;
 
                 //Check down
                 while((origin[1] - counter) > 0 && !endOfLine){
-                    let down = document.getElementById(`${origin[0]}, ${origin[1] - counter}, computer`);
+                    let down = document.getElementById(`${origin[0]}, ${origin[1] - counter}, player`);
                     if(down.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
                         possCells = [];
                         endOfLine = true;
@@ -593,6 +602,7 @@ async function computerShots() {
                         possCells.push([origin[0],(origin[1] - counter)]);
                         counter++;
                     } else {
+                        possCells.push([origin[0],(origin[1] - counter)]);
                         endOfLine = true;
                     }
                 }
@@ -601,17 +611,19 @@ async function computerShots() {
                     returnArray.push(possCells);
                     possCells = [];
                 }
+                endOfLine = false;
                 counter = 1;
                 //Check up
                 while((origin[1] + counter) <= GRID_SIZE && !endOfLine){
-                    let up = document.getElementById(`${origin[0]}, ${origin[1] + counter}, computer`);
-                    if(left.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
+                    let up = document.getElementById(`${origin[0]}, ${origin[1] + counter}, player`);
+                    if(up.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
                         possCells = [];
                         endOfLine = true;
                     } else if (up.classList.contains("hit")){
                         possCells.push([origin[0],(origin[1] + counter)]);
                         counter++;
                     } else {
+                        possCells.push([origin[0],(origin[1] + counter)]);
                         endOfLine = true;
                     }
                 }
@@ -623,10 +635,15 @@ async function computerShots() {
                 return returnArray;
             }
 
-            function makeGuess(directionIndex, originX, originY){
-                let options = [["left", "x", -1], ["right", "x", 1], ["down", "y", -1], ["up", "y", 1]];
-                let newX = (options[directionIndex][1] === "x") ? originX + 1 : originX;
-                let newY = (options[directionIndex][1] === "y") ? originY + 1 : originY;
+            function makeGuess(direction, originX, originY){
+                let options = {
+                    left: ["x", -1],
+                    right: ["x", 1],
+                    down: ["y", -1],
+                    up: ["y", 1]
+                };
+                let newX = (options[direction][0] === "x") ? originX + options[direction][1] : originX;
+                let newY = (options[direction][0] === "y") ? originY + options[direction][1] : originY;
                 return [newX, newY];
             }
             // TODO START HERE ... RANDOMIZE THE DECISIONS
