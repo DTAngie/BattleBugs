@@ -374,6 +374,10 @@ function fireShot(offense, cell){
     let shipHit = wasHit(x,y);
     if(shipHit){
         hitData.bugCells.push([x,y]);
+        if(!hitData.shipsHit.hasOwnProperty([shipHit[0]])){
+            hitData.shipsHit[shipHit[0]] = [];
+        }
+        hitData.shipsHit[shipHit[0]].push([x,y]);
         hitData.shipsLeft[shipHit[0]].splice(shipHit[1], 1);
         if(hitData.shipsLeft[shipHit[0]].length === 0){
             delete hitData.shipsLeft[shipHit[0]];
@@ -531,17 +535,39 @@ async function computerShots() {
             //If all surrounding spots are empty, choose direction at random
             if(possibilities[0].length === possibilities[possibilities.length-1].length){
                 let availableOptions = [];
-                for(let i = 0; i < possibilities.length; i++){
-                    availableOptions.push(possibilities[i][0]);
-                }
-                let randomDirection = availableOptions[Math.floor(Math.random()*availableOptions.length)];
+                // for(let i = 0; i < possibilities.length; i++){
+                //     availableOptions.push(possibilities[i][0]);
+                // }
+                // let randomDirection = availableOptions[Math.floor(Math.random()*availableOptions.length)];
+                let randomDirection = possibilities[Math.floor(Math.random()*possibilities.length)][0];
                 let shot = makeGuess(randomDirection, lastX, lastY);
                 fireShot("computer", `${shot[0]}, ${shot[1]}`);
-            }// Now check for multiple options
-            // if(possibilities[0].length === poss)
+            } else {
+                let coinFlip = Math.floor(Math.random()*2);
+                //if next hit was to the left or right, pick random direction
+                // TODO START HERE
+
+                if(possibilities[0][0] === "left"){
+                    if(coinFlip === 0){
+                        //pick to the left of extreme
+                    } else if(coinFlip === 1){
+                        //pick to the right of the origin
+                    }
+                }
+
+                //if next hit was up or down, pick random direction
+            }
+            
+            // if(possibilities[0].length === possibilities[1].length){// Now check for multiple options
+            //     let randomDirection = 
+            // }
+            
 
             //If one adjacent spot is a hit, then flip a coin to determine to go one direction or another
             //left/right or up/down
+
+            //if computer has sunk a ship but there was a previous hit, as is the case with
+            //adjacent bugs, find any outstanding hits and go from there 
             console.log('while loop finished!');
 
             function checkDirections(origin){ // this will return an array of all the different directions
