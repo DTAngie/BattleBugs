@@ -345,7 +345,6 @@ function placeBug(){
 }
 
 function fireShot(offense, cell){
-    console.log("firing");
     let coordinates = cell.split(", ");
     let x = parseInt(coordinates[0]);
     let y = parseInt(coordinates[1]);
@@ -353,7 +352,6 @@ function fireShot(offense, cell){
     // first add information to hit object
     //then check to see if cell is part of a ship
     let shipHit = wasHit(x,y);
-    console.log(shipHit);
     if(shipHit){
         hitData.bugCells.push([x,y]);
         hitData.shipsLeft[shipHit[0]].splice(shipHit[1], 1);
@@ -362,6 +360,26 @@ function fireShot(offense, cell){
         }    
     } else {
         hitData.emptyCells.push([x,y]);
+    }
+    if(isWinner()){
+        render();
+        return;
+    }
+
+    shotsLeft--;
+    
+    if(shotsLeft === 0){
+        currentTurn = "computer";
+        shotsLeft = MAX_SHOTS;
+        gameMessage = "Computer's turn.";
+    }
+
+    function isWinner(){
+        if(Object.keys(hitData.shipsLeft).length === 0){
+            gameMessage = `${offense} is the winner!`;
+            return true;
+        }
+        return false;
     }
 
     function wasHit(x, y){
@@ -378,11 +396,7 @@ function fireShot(offense, cell){
         }
         return false;
     }
-            //if not successfull, change color of cell
-            //if succesfful hit, change color of cell
-            //if all cells of a ship have been hit, update the object
-            //decrement number of shots by one.
-    shotsLeft--;
+
     render();
             //when all shots are taken, change turns
 }
