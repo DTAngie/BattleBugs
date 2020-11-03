@@ -417,9 +417,9 @@ function fireShot(offense, cell){
     }
 
     function wasHit(x, y){
-        //Iterate through this array to save time as ships get 
+        //Iterate through this array to save time as ships get hit
         for(let ship in hitData.shipsLeft){
-            console.log(ship);
+            // console.log(ship);
             let index = 0;
             for(let point of hitData.shipsLeft[ship]){
                 if (point[0] === x && point[1] === y) {
@@ -509,16 +509,105 @@ async function computerShots() {
 
     function doneShooting(){
         let x, y;
-        let lasthit = hits.computer.lastHit;
+        let lastHit = hits.computer.lastHit;
         //first look for hits, if something was hit and the ship was still in the queue, guess around it
         if(lastHit.length > 0) {
             //if a ship was shot last time, guess around it
             //FIRST determine the situation
             document.getElementById(`${lastHit[1]}, ${lastHit[2]}, computer`);
-            let left = (x > 1) ? document.getElementById(`${lastHit[1]-1}, ${lastHit[2]}, computer`) : null;
-            let right = (x < GRID_SIZE) ? document.getElementById(`${lastHit[1]+1}, ${lastHit[2]}, computer`) : null;
-            let up = (y < GRID_SIZE) ? document.getElementById(`${lastHit[1]}, ${lastHit[2]+1}, computer`) : null;
-            let down = (y > 1) ? document.getElementById(`${lastHit[1]}, ${lastHit[2]-1}, computer`) : null;
+            // let left = (x > 1) ? document.getElementById(`${lastHit[1]-1}, ${lastHit[2]}, computer`) : null;
+            // let right = (x < GRID_SIZE) ? document.getElementById(`${lastHit[1]+1}, ${lastHit[2]}, computer`) : null;
+            // let up = (y < GRID_SIZE) ? document.getElementById(`${lastHit[1]}, ${lastHit[2]+1}, computer`) : null;
+            // let down = (y > 1) ? document.getElementById(`${lastHit[1]}, ${lastHit[2]-1}, computer`) : null;
+            console.log('about to fire while loop');
+            
+            let possibilities = checkDirections([x,y]).sort(function(a,b){
+                return b.length - a.length;
+            }); // Sorts the array by length
+
+            console.log('while loop finished!');
+
+            function checkDirections(origin){ // this will return an array of all the different directions
+                let counter = 1;
+                let possCells = [];
+                //Check left
+                while((origin[0] - counter) > 0 && !endOfLine){
+                    let left = document.getElementById(`${origin[0] - counter}, ${origin[1]}, computer`);
+                    if(left.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
+                        possCells = [];
+                        endOfLine = true;
+                    } else if (left.classList.contains("hit")){
+                        possCells.push([(origin[0] - counter),origin[1]]);
+                        counter++;
+                    } else {
+                        endOfLine = true;
+                    }
+                }
+                if (possCells.length > 0){
+                    possCells.unshift("left");
+                    possibilities.push(possCells);
+                    possCells = [];
+                }
+                counter = 1;
+                //Check right
+                while((origin[0] + counter) <= GRID_SIZE && !endOfLine){
+                    let right = document.getElementById(`${origin[0] + counter}, ${origin[1]}, computer`);
+                    if(right.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
+                        possCells = [];
+                        endOfLine = true;
+                    } else if (right.classList.contains("hit")){
+                        possCells.push([(origin[0] + counter),origin[1]]);
+                        counter++;
+                    } else {
+                        endOfLine = true;
+                    }
+                }
+                if (possCells.length > 0){
+                    possCells.unshift("right");
+                    possibilities.push(possCells);
+                    possCells = [];
+                }
+                counter = 1;
+
+                //Check down
+                while((origin[1] - counter) > 0 && !endOfLine){
+                    let down = document.getElementById(`${origin[0]}, ${origin[1] - counter}, computer`);
+                    if(down.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
+                        possCells = [];
+                        endOfLine = true;
+                    } else if (down.classList.contains("hit")){
+                        possCells.push([origin[0],(origin[1] - counter)]);
+                        counter++;
+                    } else {
+                        endOfLine = true;
+                    }
+                }
+                if (possCells.length > 0){
+                    possCells.unshift("down");
+                    possibilities.push(possCells);
+                    possCells = [];
+                }
+                counter = 1;
+                //Check up
+                while((origin[1] + counter) <= GRID_SIZE && !endOfLine){
+                    let up = document.getElementById(`${origin[0]}, ${origin[1] + counter}, computer`);
+                    if(left.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
+                        possCells = [];
+                        endOfLine = true;
+                    } else if (up.classList.contains("hit")){
+                        possCells.push([origin[0],(origin[1] + counter)]);
+                        counter++;
+                    } else {
+                        endOfLine = true;
+                    }
+                }
+                if (possCells.length > 0){
+                    possCells.unshift("up");
+                    possibilities.push(possCells);
+                    possCells = [];
+                }
+                counter = 1;
+            }
 
             // TODO START HERE ... RANDOMIZE THE DECISIONS
             //flip a coin to decide which direction to go in first. 
