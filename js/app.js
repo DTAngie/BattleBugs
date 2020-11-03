@@ -503,6 +503,7 @@ async function computerShots() {
             //This gives the illusion of the computer thinking.
             gameMessage = "Player's turn.";
             currentTurn = "player";
+            shotsLeft = MAX_SHOTS; //TODO remove this once computer can decrement it's count...this is redundant
             render();
         }, 5000);
     }
@@ -510,26 +511,39 @@ async function computerShots() {
     function doneShooting(){
         let x, y;
         let lastHit = hits.computer.lastHit;
+        let lastX = lastHit[1];
+        let lastY = lastHit[2];
         //first look for hits, if something was hit and the ship was still in the queue, guess around it
         if(lastHit.length > 0) {
             //if a ship was shot last time, guess around it
             //FIRST determine the situation
-            document.getElementById(`${lastHit[1]}, ${lastHit[2]}, computer`);
+            document.getElementById(`${lastX}, ${lastY}, computer`);
             // let left = (x > 1) ? document.getElementById(`${lastHit[1]-1}, ${lastHit[2]}, computer`) : null;
             // let right = (x < GRID_SIZE) ? document.getElementById(`${lastHit[1]+1}, ${lastHit[2]}, computer`) : null;
             // let up = (y < GRID_SIZE) ? document.getElementById(`${lastHit[1]}, ${lastHit[2]+1}, computer`) : null;
             // let down = (y > 1) ? document.getElementById(`${lastHit[1]}, ${lastHit[2]-1}, computer`) : null;
             console.log('about to fire while loop');
             
-            let possibilities = checkDirections([x,y]).sort(function(a,b){
+            let possibilities = checkDirections([lastX, lastY]).sort(function(a,b){
                 return b.length - a.length;
             }); // Sorts the array by length
 
+            //If all spots are empty, choose direction at random
+            if(possibilities.length === 0){
+                let randomDirection = Math.ceil(Math.random()*4);
+                let shot = makeGuess(randomDirection, lastX, lastY);
+                fireShot("computer", `${shot[0]}, ${shot[1]}`);
+            }
+
+            //If one adjacent spot is a hit, then flip a coin to determine to go one direction or another
+            //left/right or up/down
             console.log('while loop finished!');
 
             function checkDirections(origin){ // this will return an array of all the different directions
                 let counter = 1;
                 let possCells = [];
+                let returnArray = [];
+                let endOfLine = false;
                 //Check left
                 while((origin[0] - counter) > 0 && !endOfLine){
                     let left = document.getElementById(`${origin[0] - counter}, ${origin[1]}, computer`);
@@ -545,7 +559,7 @@ async function computerShots() {
                 }
                 if (possCells.length > 0){
                     possCells.unshift("left");
-                    possibilities.push(possCells);
+                    returnArray.push(possCells);
                     possCells = [];
                 }
                 counter = 1;
@@ -564,7 +578,7 @@ async function computerShots() {
                 }
                 if (possCells.length > 0){
                     possCells.unshift("right");
-                    possibilities.push(possCells);
+                    returnArray.push(possCells);
                     possCells = [];
                 }
                 counter = 1;
@@ -584,7 +598,7 @@ async function computerShots() {
                 }
                 if (possCells.length > 0){
                     possCells.unshift("down");
-                    possibilities.push(possCells);
+                    returnArray.push(possCells);
                     possCells = [];
                 }
                 counter = 1;
@@ -603,12 +617,18 @@ async function computerShots() {
                 }
                 if (possCells.length > 0){
                     possCells.unshift("up");
-                    possibilities.push(possCells);
+                    returnArray.push(possCells);
                     possCells = [];
                 }
-                counter = 1;
+                return returnArray;
             }
 
+            function makeGuess(directionIndex, originX, originY){
+                let options = [["left", "x", -1], ["right", "x", 1], ["down", "y", -1], ["up", "y", 1]];
+                let newX = (options[directionIndex][1] === "x") ? originX + 1 : originX;
+                let newY = (options[directionIndex][1] === "y") ? originY + 1 : originY;
+                return [newX, newY];
+            }
             // TODO START HERE ... RANDOMIZE THE DECISIONS
             //flip a coin to decide which direction to go in first. 
             //check left and right
