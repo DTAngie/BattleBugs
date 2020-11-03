@@ -60,7 +60,8 @@ let hits = {
         emptyCells: [],
         bugCells: [],
         shipsHit: {},
-        shipsLeft: {}
+        shipsLeft: {},
+        lastHit: []
     }
 }
 
@@ -103,6 +104,21 @@ function init() {
             Epsilon: []
         } // QUESTION: IS THERE A BETTER WAY TO INITIALIZE THIS? IT SEEMS REDUNDANT WITH APP 
         // STATE VARIABLES
+    }
+    hits = {
+        player: {
+            emptyCells: [], //this will hold the actual cells hit
+            bugCells: [],
+            shipsHit: {}, // this will list opponents ships hit, this may not be needed so check if actually used
+            shipsLeft: {} // this will list opponents ships left to hit
+        },
+        computer: {
+            emptyCells: [],
+            bugCells: [],
+            shipsHit: {},
+            shipsLeft: {},
+            lastHit: []
+        }
     }
     // hits.player.shipsLeft = Object.keys(BATTLEBUGS);
     // hits.computer.shipsLeft = Object.keys(BATTLEBUGS);
@@ -236,6 +252,11 @@ function handleComputerGridClick(e){
     if(!e.target.classList.contains('grid-cell') || currentTurn !== "player") {
         return;
     };
+    if(e.target.classList.contains('hit') || e.target.classList.contains('missed')){
+        gameMessage = "This space has already been hit.";
+        render();
+        return;
+    }
     if(!bugsPlaced){
         gameMessage = " Place your bugs on the player grid."
     } else {
@@ -333,15 +354,14 @@ function placeBug(){
     if(currentTurn === "player" && currentBug === PLACEMENT_ORDER.length){//all player bugs are placed
         // bugsPlaced = true;
         readyToPlace = false;
-        gameMessage = "Your bugs have been placed. Waiting for computer."
         //TODO add a delay so that even after computer does the turn it waits a while to simulate thinking
         currentBug = 0;
         currentTurn = "computer";
         selectedCells = [];
         computerPlacement(); //this should be an async function so that render below happens first and then computerMove does
+        gameMessage = "Your bugs have been placed. Waiting for computer."
     }
     render();
-    //TODO When all pbugs are placed it's time for computer to place bugs.
 }
 
 function fireShot(offense, cell){
@@ -357,7 +377,14 @@ function fireShot(offense, cell){
         hitData.shipsLeft[shipHit[0]].splice(shipHit[1], 1);
         if(hitData.shipsLeft[shipHit[0]].length === 0){
             delete hitData.shipsLeft[shipHit[0]];
-        }    
+            if(currentTurn === "computer") {
+                hitData.lastHit = [];
+            }
+        } else {
+            if(currentTurn === "computer") {
+                hitData.lastHit = [shipHit[0], x, y];
+            }
+        }   
     } else {
         hitData.emptyCells.push([x,y]);
     }
@@ -369,9 +396,16 @@ function fireShot(offense, cell){
     shotsLeft--;
     
     if(shotsLeft === 0){
-        currentTurn = "computer";
-        shotsLeft = MAX_SHOTS;
-        gameMessage = "Computer's turn.";
+        if(currentTurn === "player"){
+            currentTurn = "computer";
+            shotsLeft = MAX_SHOTS;
+            computerShots();
+            gameMessage = "Computer's turn.";
+        } else {
+            currentTurn = "player";
+            shotsLeft = MAX_SHOTS;
+            gameMessage = "Player's turn.";
+        }
     }
 
     function isWinner(){
@@ -396,7 +430,6 @@ function fireShot(offense, cell){
         }
         return false;
     }
-
     render();
             //when all shots are taken, change turns
 }
@@ -411,17 +444,15 @@ function renderMessage(){
 
 async function computerPlacement(){
     //Iterate through each of the placement order
-
-    //randomly choose direction
-    //choose cell at random (x or y must be less than bug length)
-    //check for collision, if collision,rotate and test again...if still collision choose another location than choose another random location
-    //place bug
-    //when all bugs are placed trigger game start
-
     let computerStatus = await doneMoving();
     if (doneMoving) {
-        gameMessage = "Computer is placing bugs."; // This may need to be moved elsewhere if it takes a little bit of time
-        render();
+        setTimeout(function(){
+            //This gives the illusion of the computer thinking.
+            gameMessage = "Computer finished. Let's play";
+            currentTurn = "player";
+            bugsPlaced = true;
+            render();
+        }, 5000);
     }
 
     function doneMoving(){
@@ -457,26 +488,62 @@ async function computerPlacement(){
 
             }
             
-                render(); // TODO take this out after test
+                render(); // TODO Maybe? take this out after test
         }
-        return true;
+        return new Promise(resolve => resolve(true));
     }
-    // for(let i)
     
-    setTimeout(function(){
-        //This gives the illusion of the computer thinking.
-        gameMessage = "Computer Finished. Let's play";
-        currentTurn = "player";
-        bugsPlaced = true;
-        render();
-    }, 5000);
+    
 }
 
+async function computerShots() {
+    let computerStatus = await doneShooting();
+    if (doneShooting) {
+        setTimeout(function(){
+            //This gives the illusion of the computer thinking.
+            gameMessage = "Player's turn.";
+            currentTurn = "player";
+            render();
+        }, 5000);
+    }
+
+    function doneShooting(){
+        let x, y;
+        let lasthit = hits.computer.lastHit;
+        //first look for hits, if something was hit and the ship was still in the queue, guess around it
+        if(lastHit.length > 0) {
+            //if a ship was shot last time, guess around it
+            //FIRST determine the situation
+            document.getElementById(`${lastHit[1]}, ${lastHit[2]}, computer`);
+            let left = (x > 1) ? document.getElementById(`${lastHit[1]-1}, ${lastHit[2]}, computer`) : null;
+            let right = (x < GRID_SIZE) ? document.getElementById(`${lastHit[1]+1}, ${lastHit[2]}, computer`) : null;
+            let up = (y < GRID_SIZE) ? document.getElementById(`${lastHit[1]}, ${lastHit[2]+1}, computer`) : null;
+            let down = (y > 1) ? document.getElementById(`${lastHit[1]}, ${lastHit[2]-1}, computer`) : null;
+
+            // TODO START HERE ... RANDOMIZE THE DECISIONS
+            //flip a coin to decide which direction to go in first. 
+            //check left and right
+                // if space to left is hit too, either guess right or guess left
+            //check up and down
+        } else {
+            //pick a random number
+            x = Math.ceil(Math.random()*GRID_SIZE);
+            y = Math.ceil(Math.random()*GRID_SIZE);
+            fireShot("computer", `${x}, ${y}`);
+        }       
+        console.log('shots fired');
+        //Randomly pick a cell
+
+        // check to make sure that cell wasn't already picked.
+    }
+}
+
+
 // TODO: 
-// player makes guesses
 // computer makes guesses
 // determine when ship is sunk and display image
 // determine winner
 //display images of bugs on board as well as bugs left and shots left
 //if time permits, make the bugLocations a private variable so that people can't see them.
 //remove all console logs
+//make sure that player can't guess the same cell twice
