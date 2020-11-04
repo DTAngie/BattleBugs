@@ -403,8 +403,18 @@ function fireShot(offense, cell){
         if(currentTurn === "player"){
             currentTurn = "computer";
             shotsLeft = MAX_SHOTS;
-            computerShots();
             gameMessage = "Computer's turn.";
+            render();
+            let testIndex = 0; //remove this after test
+            while(shotsLeft > 0 && currentTurn === "computer"){
+                computerShots();
+                console.log(shotsLeft, "shots ar left");
+                testIndex++
+                if(testIndex === 8){
+                    shotsLeft = -1;
+                }
+            // TODO START HERE . .. AN INFNITE LOOP ENSUES
+            }
         } else {
             currentTurn = "player";
             shotsLeft = MAX_SHOTS;
@@ -712,10 +722,10 @@ async function computerShots() {
     
         } else if (outstandingHits()){
             //are there other hits out there that aren't haven't been completed?
-            lastHit = [target, [target]];
+            lastHit = outstandingHits();
             // TODO this should suffice... depending on where shots are decremented, 
             // you may want to increment the shot to allow the process to start again from scratch
-            //TODO continue with this this logic process
+
         } else { //if nothing else...pick a random
             //pick a random number
             x = Math.ceil(Math.random()*GRID_SIZE);
