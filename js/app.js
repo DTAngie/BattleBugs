@@ -518,7 +518,7 @@ async function computerShots() {
         let lastX = lastHit[1];
         let lastY = lastHit[2];
         //first look for hits, if something was hit and the ship was still in the queue, guess around it
-        if(lastHit.length > 0) {
+        if(lastHit.length > 0 && !lastShipSunk()) {
             //if a ship was shot last time, guess around it
             //FIRST determine the situation
             document.getElementById(`${lastX}, ${lastY}, computer`);
@@ -542,18 +542,55 @@ async function computerShots() {
                 let randomDirection = possibilities[Math.floor(Math.random()*possibilities.length)][0];
                 let shot = makeGuess(randomDirection, lastX, lastY);
                 fireShot("computer", `${shot[0]}, ${shot[1]}`);
-            } else {
-                let coinFlip = Math.floor(Math.random()*2);
-                //if next hit was to the left or right, pick random direction
-                // TODO START HERE
-
-                if(possibilities[0][0] === "left"){
-                    if(coinFlip === 0){
-                        //pick to the left of extreme
-                    } else if(coinFlip === 1){
-                        //pick to the right of the origin
+            } else { //if a pattern is emerging 
+                let targetDirection = possibilities[0].shift();
+                if (targetDirection === "left" || targetDirection === "right"){
+                    let targetCells = possibilities[0].sort(function(a,b){
+                        return a[0] - b[0];
+                    });
+                    let leftSide = targetCells[0];
+                    let rightSide = targetCells[targetCells.length - 1];
+                    if(lastX === leftSide[0]){ 
+                        //if the left most one is the one then there's a miss in that direction, go right
+                        fireShot("computer", `${rightSide[0]}, ${rightSide[1]}`);
+                    } else if (lastX === rightSide[0]) {
+                        //if the right most one is the one then there's a miss in that direction, go left
+                        fireShot("computer", `${leftSide[0]}, ${leftSide[1]}`);
+                    } else {
+                        //if either side could work, do coin flip
+                        let coinFlip = Math.floor(Math.random()*2);
+                        if (coinFlip === 0){
+                            fireShot("computer", `${rightSide[0]}, ${rightSide[1]}`);
+                        } else {
+                            fireShot("computer", `${leftSide[0]}, ${leftSide[1]}`);
+                        }
                     }
                 }
+                if(targetDirection === "up" || targetDirection === "down"){
+                    let targetCells = possibilities[0].sort(function(a,b){
+                        return a[1] - b[1];
+                    });
+                    let downSide = targetCells[0];
+                    let upSide = targetCells[targetCells.length - 1];
+                    if(lastY === downSide[1]){ 
+                        //if the lower most one is the one then there's a miss in that direction, go up
+                        fireShot("computer", `${upSide[0]}, ${upSide[1]}`);
+                    } else if (lastY === upSide[1]) {
+                        //if the upper most one is the one then there's a miss in that direction, go down
+                        fireShot("computer", `${downSide[0]}, ${downSide[1]}`);
+                    } else {
+                       //if either side could work, do coin flip
+                       let coinFlip = Math.floor(Math.random()*2);
+                       if (coinFlip === 0){
+                        fireShot("computer", `${upSide[0]}, ${upSide[1]}`);
+                       } else {
+                        fireShot("computer", `${downSide[0]}, ${downSide[1]}`);
+                       }
+                    }
+                }
+
+            
+
 
                 //if next hit was up or down, pick random direction
             }
@@ -571,7 +608,7 @@ async function computerShots() {
             console.log('while loop finished!');
 
             function checkDirections(origin){ // this will return an array of all the different directions
-                let counter = 1;
+                let counter = 0;
                 let possCells = [];
                 let returnArray = [];
                 let endOfLine = false;
@@ -595,7 +632,7 @@ async function computerShots() {
                     possCells = [];
                 }
                 endOfLine = false;
-                counter = 1;
+                counter = 0;
                 //Check right
                 while((origin[0] + counter) <= GRID_SIZE && !endOfLine){
                     let right = document.getElementById(`${origin[0] + counter}, ${origin[1]}, player`);
@@ -616,7 +653,7 @@ async function computerShots() {
                     possCells = [];
                 }
                 endOfLine = false;
-                counter = 1;
+                counter = 0;
 
                 //Check down
                 while((origin[1] - counter) > 0 && !endOfLine){
@@ -638,7 +675,7 @@ async function computerShots() {
                     possCells = [];
                 }
                 endOfLine = false;
-                counter = 1;
+                counter = 0;
                 //Check up
                 while((origin[1] + counter) <= GRID_SIZE && !endOfLine){
                     let up = document.getElementById(`${origin[0]}, ${origin[1] + counter}, player`);
@@ -672,21 +709,40 @@ async function computerShots() {
                 let newY = (options[direction][0] === "y") ? originY + options[direction][1] : originY;
                 return [newX, newY];
             }
-            // TODO START HERE ... RANDOMIZE THE DECISIONS
-            //flip a coin to decide which direction to go in first. 
-            //check left and right
-                // if space to left is hit too, either guess right or guess left
-            //check up and down
-        } else {
+    
+        } else if (outstandingHits()){
+            //are there other hits out there that aren't haven't been completed?
+            lastHit = [target, [target]];
+            // TODO this should suffice... depending on where shots are decremented, 
+            // you may want to increment the shot to allow the process to start again from scratch
+            //TODO continue with this this logic process
+        } else { //if nothing else...pick a random
             //pick a random number
             x = Math.ceil(Math.random()*GRID_SIZE);
             y = Math.ceil(Math.random()*GRID_SIZE);
             fireShot("computer", `${x}, ${y}`);
         }       
         console.log('shots fired');
-        //Randomly pick a cell
+        
 
         // check to make sure that cell wasn't already picked.
+        function lastShipSunk(){
+            if(!hits.computer.shipsHit.hasOwnProperty(lastHit[0])) {
+                return false;
+            }
+            if(hits.computer.shipsHit[lastHit[0]].length === BATTLEBUGS[lastHit[0]].size){
+                return true;
+            }
+            return false;
+        }
+
+        function outstandingHits(){
+            for (let ship in hits.computer.shipsHit){
+                if (hits.computer.shipsHit[ship].length !== BATTLEBUGS[ship].size) {
+                    return [ship, ship[0]];
+                }
+            }
+        }
     }
 }
 
