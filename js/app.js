@@ -21,7 +21,7 @@ const BATTLEBUGS = {
         image: "/linkToImage.png"
     }
 };
-const MAX_SHOTS = 5;
+const MAX_SHOTS = 1; //TODO change this back to five when done testing
 const PLACEMENT_ORDER = Object.keys(BATTLEBUGS).reverse();
 const GRID_SIZE = 8;
 
@@ -390,6 +390,7 @@ function fireShot(offense, cell){
             }
         }   
     } else {
+        console.log('checking erroneous misses', x, " , ", y);
         hitData.emptyCells.push([x,y]);
     }
     if(isWinner()){
@@ -405,15 +406,8 @@ function fireShot(offense, cell){
             shotsLeft = MAX_SHOTS;
             gameMessage = "Computer's turn.";
             render();
-            let testIndex = 0; //remove this after test
             while(shotsLeft > 0 && currentTurn === "computer"){
                 computerShots();
-                console.log(shotsLeft, "shots ar left");
-                testIndex++
-                if(testIndex === 8){
-                    shotsLeft = -1;
-                }
-            // TODO START HERE . .. AN INFNITE LOOP ENSUES
             }
         } else {
             currentTurn = "player";
@@ -517,9 +511,9 @@ async function computerShots() {
             //This gives the illusion of the computer thinking.
             gameMessage = "Player's turn.";
             currentTurn = "player";
-            shotsLeft = MAX_SHOTS; //TODO remove this once computer can decrement it's count...this is redundant
+            // shotsLeft = MAX_SHOTS; //TODO remove this once computer can decrement it's count...this is redundant
             render();
-        }, 4000);
+        }, 500); //TODO Change this to 4000 when done testing
     }
 
     function doneShooting(){
@@ -532,19 +526,16 @@ async function computerShots() {
             //if a ship was shot last time, guess around it
             //FIRST determine the situation
             document.getElementById(`${lastX}, ${lastY}, computer`);
-            // let left = (x > 1) ? document.getElementById(`${lastHit[1]-1}, ${lastHit[2]}, computer`) : null;
-            // let right = (x < GRID_SIZE) ? document.getElementById(`${lastHit[1]+1}, ${lastHit[2]}, computer`) : null;
-            // let up = (y < GRID_SIZE) ? document.getElementById(`${lastHit[1]}, ${lastHit[2]+1}, computer`) : null;
-            // let down = (y > 1) ? document.getElementById(`${lastHit[1]}, ${lastHit[2]-1}, computer`) : null;
             console.log('about to fire while loop');
             
             let possibilities = checkDirections([lastX, lastY]).sort(function(a,b){
                 return b.length - a.length;
             }); // Sorts the array by length
-
+            console.log(possibilities);
             //If all surrounding spots are empty, choose direction at random
             if(possibilities[0].length === possibilities[possibilities.length-1].length){
                 let availableOptions = [];
+                console.log('surrounding spots empty');
                 // for(let i = 0; i < possibilities.length; i++){
                 //     availableOptions.push(possibilities[i][0]);
                 // }
@@ -553,6 +544,7 @@ async function computerShots() {
                 let shot = makeGuess(randomDirection, lastX, lastY);
                 fireShot("computer", `${shot[0]}, ${shot[1]}`);
             } else { //if a pattern is emerging 
+                console.log('pattern emerging');
                 let targetDirection = possibilities[0].shift();
                 if (targetDirection === "left" || targetDirection === "right"){
                     let targetCells = possibilities[0].sort(function(a,b){
@@ -561,14 +553,17 @@ async function computerShots() {
                     let leftSide = targetCells[0];
                     let rightSide = targetCells[targetCells.length - 1];
                     if(lastX === leftSide[0]){ 
+                        console.log(`fire to right ${rightSide[0]}, ${rightSide[1]}`);
                         //if the left most one is the one then there's a miss in that direction, go right
                         fireShot("computer", `${rightSide[0]}, ${rightSide[1]}`);
                     } else if (lastX === rightSide[0]) {
+                        console.log(`fire to left ${leftSide[0]}, ${leftSide[1]}`);
                         //if the right most one is the one then there's a miss in that direction, go left
                         fireShot("computer", `${leftSide[0]}, ${leftSide[1]}`);
                     } else {
                         //if either side could work, do coin flip
                         let coinFlip = Math.floor(Math.random()*2);
+                        console.log('random flip', coinFlip);
                         if (coinFlip === 0){
                             fireShot("computer", `${rightSide[0]}, ${rightSide[1]}`);
                         } else {
@@ -583,14 +578,17 @@ async function computerShots() {
                     let downSide = targetCells[0];
                     let upSide = targetCells[targetCells.length - 1];
                     if(lastY === downSide[1]){ 
+                        console.log(`fire to up ${upSide[0]}, ${upSide[1]}`);
                         //if the lower most one is the one then there's a miss in that direction, go up
                         fireShot("computer", `${upSide[0]}, ${upSide[1]}`);
                     } else if (lastY === upSide[1]) {
+                        console.log(`fire to down ${downSide[0]}, ${downSide[1]}`);
                         //if the upper most one is the one then there's a miss in that direction, go down
                         fireShot("computer", `${downSide[0]}, ${downSide[1]}`);
                     } else {
                        //if either side could work, do coin flip
                        let coinFlip = Math.floor(Math.random()*2);
+                       console.log('random flip', coinFlip);
                        if (coinFlip === 0){
                         fireShot("computer", `${upSide[0]}, ${upSide[1]}`);
                        } else {
@@ -623,24 +621,41 @@ async function computerShots() {
                 let returnArray = [];
                 let endOfLine = false;
                 //Check left
+                console.log('return array should be empty');
+                console.log(returnArray);
                 while((origin[0] - counter) > 0 && !endOfLine){
                     let left = document.getElementById(`${origin[0] - counter}, ${origin[1]}, player`);
                     if(left.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
                         possCells = [];
                         endOfLine = true;
+                        console.log(counter, endOfLine, "checking if miss is happening");
                     } else if (left.classList.contains("hit")){
-                        possCells.push([(origin[0] - counter),origin[1]]);
-                        counter++;
+                        //if the last hit cells is at the edge of the grid, don't go any further!!!
+                        if(origin[0]+ counter === 1) {
+                            possCells = [];
+                            endOfLine = true;
+                        } else {
+                            possCells.push([(origin[0] - counter),origin[1]]);
+                            counter++;
+                            console.log(counter, endOfLine, "checking if hit is happening");
+                        }
                     } else {
+                        console.log(counter, endOfLine, "checking if alternative is happening");
                         possCells.push([(origin[0] - counter),origin[1]]);
                         endOfLine = true;
                     }
                 }
+                console.log(possCells.length);
                 if (possCells.length > 0){
+                    console.log('prepend the array');
                     possCells.unshift("left");
+                    console.log(possCells);
                     returnArray.push(possCells);
+                    console.log(returnArray);
                     possCells = [];
                 }
+                console.log("returnArray after first loop");
+                console.log(returnArray.toString());
                 endOfLine = false;
                 counter = 0;
                 //Check right
@@ -649,17 +664,30 @@ async function computerShots() {
                     if(right.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
                         possCells = [];
                         endOfLine = true;
+                        console.log(counter, endOfLine, "checking if miss is happening");
                     } else if (right.classList.contains("hit")){
-                        possCells.push([(origin[0] + counter),origin[1]]);
-                        counter++;
+                        //if the last hit cells is at the edge of the grid, don't go any further!!!
+                        if(origin[0]+ counter === GRID_SIZE) {
+                            possCells = [];
+                            endOfLine = true;
+                        } else {
+                            possCells.push([(origin[0] + counter),origin[1]]);
+                            counter++;
+                            console.log(counter, endOfLine, "checking if hit is happening");
+                        }
                     } else {
+                        console.log(counter, endOfLine, "checking if alternative is happening");
                         possCells.push([(origin[0] + counter),origin[1]]);
                         endOfLine = true;
                     }
                 }
+                console.log(possCells.length);
                 if (possCells.length > 0){
+                    console.log('prepend the array');
                     possCells.unshift("right");
+                    console.log(possCells);
                     returnArray.push(possCells);
+                    console.log(returnArray.toString());
                     possCells = [];
                 }
                 endOfLine = false;
@@ -671,17 +699,30 @@ async function computerShots() {
                     if(down.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
                         possCells = [];
                         endOfLine = true;
+                        console.log(counter, endOfLine, "checking if miss is happening");
                     } else if (down.classList.contains("hit")){
-                        possCells.push([origin[0],(origin[1] - counter)]);
-                        counter++;
+                        //if the last hit cells is at the edge of the grid, don't go any further!!!
+                        if(origin[1]+ counter === 1) {
+                            possCells = [];
+                            endOfLine = true;
+                        } else {
+                            possCells.push([origin[0],(origin[1] - counter)]);
+                            counter++;
+                            console.log(counter, endOfLine, "checking if hit is happening");
+                        }
                     } else {
+                        console.log(counter, endOfLine, "checking if alternative is happening");
                         possCells.push([origin[0],(origin[1] - counter)]);
                         endOfLine = true;
                     }
                 }
+                console.log(possCells.length);
                 if (possCells.length > 0){
+                    console.log('prepend the array');
                     possCells.unshift("down");
+                    console.log(possCells);
                     returnArray.push(possCells);
+                    console.log(returnArray.toString());
                     possCells = [];
                 }
                 endOfLine = false;
@@ -692,17 +733,30 @@ async function computerShots() {
                     if(up.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
                         possCells = [];
                         endOfLine = true;
+                        console.log(counter, endOfLine, "checking if miss is happening");
                     } else if (up.classList.contains("hit")){
+                        //if the last hit cells is at the edge of the grid, don't go any further!!!
+                        if(origin[0]+ counter === GRID_SIZE) {
+                            possCells = [];
+                            endOfLine = true;
+                        } else {
                         possCells.push([origin[0],(origin[1] + counter)]);
                         counter++;
+                        console.log(counter, endOfLine, "checking if hit is happening");
+                        }
                     } else {
+                        console.log(counter, endOfLine, "checking if alternative is happening");
                         possCells.push([origin[0],(origin[1] + counter)]);
                         endOfLine = true;
                     }
                 }
+                console.log(possCells.length);
                 if (possCells.length > 0){
+                    console.log('prepend the array');
                     possCells.unshift("up");
+                    console.log(possCells);
                     returnArray.push(possCells);
+                    console.log(returnArray.toString());
                     possCells = [];
                 }
                 return returnArray;
@@ -715,6 +769,7 @@ async function computerShots() {
                     down: ["y", -1],
                     up: ["y", 1]
                 };
+                console.log('making guess', direction, originX, originY);
                 let newX = (options[direction][0] === "x") ? originX + options[direction][1] : originX;
                 let newY = (options[direction][0] === "y") ? originY + options[direction][1] : originY;
                 return [newX, newY];
@@ -722,11 +777,13 @@ async function computerShots() {
     
         } else if (outstandingHits()){
             //are there other hits out there that aren't haven't been completed?
+            console.log('finding outstanding');
             lastHit = outstandingHits();
             // TODO this should suffice... depending on where shots are decremented, 
             // you may want to increment the shot to allow the process to start again from scratch
 
         } else { //if nothing else...pick a random
+            console.log('completely random choice');
             //pick a random number
             x = Math.ceil(Math.random()*GRID_SIZE);
             y = Math.ceil(Math.random()*GRID_SIZE);
@@ -736,7 +793,8 @@ async function computerShots() {
         
 
         // check to make sure that cell wasn't already picked.
-        function lastShipSunk(){
+        function lastShipSunk(){ //this checks to see if last blast sunk the ship
+            console.log('checking for lastShipSunk')
             if(!hits.computer.shipsHit.hasOwnProperty(lastHit[0])) {
                 return false;
             }
@@ -749,6 +807,7 @@ async function computerShots() {
         function outstandingHits(){
             for (let ship in hits.computer.shipsHit){
                 if (hits.computer.shipsHit[ship].length !== BATTLEBUGS[ship].size) {
+                    console.log('lonely ship found', ship, ship[0]);
                     return [ship, ship[0]];
                 }
             }
