@@ -44,3 +44,7 @@
 .grid-cell.missed {
     background-color: aqua;
 }
+
+.grid-cell.sunk {
+    background-color: brown;
+}

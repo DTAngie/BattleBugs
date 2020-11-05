@@ -64,6 +64,7 @@ let hits = {
         lastHit: []
     }
 }
+let gameWinner = "";
 
 /*----- cached element references -----*/
 const startBtnEl = document.getElementById('start');
@@ -109,12 +110,14 @@ function init() {
         player: {
             emptyCells: [], //this will hold the actual cells hit
             bugCells: [],
+            sunkCells: [], // this is used for styling
             shipsHit: {}, // this will list opponents ships hit, this may not be needed so check if actually used
-            shipsLeft: {} // this will list opponents ships left to hit
+            shipsLeft: {}, // this will list opponents ships left to hit
         },
         computer: {
             emptyCells: [],
             bugCells: [],
+            sunkCells: [],
             shipsHit: {},
             shipsLeft: {},
             lastHit: []
@@ -131,6 +134,7 @@ function init() {
     currentTurn = "player";
     gameMessage = "";
     shotsLeft = MAX_SHOTS;
+    gameWinner = "";
 
 
     function generateBoard(grid, user){
@@ -204,6 +208,17 @@ function render() {
             hitCell.classList.add('missed');
         });
 
+        hits.computer.sunkCells.forEach(function(point){
+            let sunkCell = document.getElementById(`${point[0]}, ${point[1]}, player`);
+            sunkCell.classList.add('sunk');
+        });
+
+        hits.player.sunkCells.forEach(function(point){
+            let sunkCell = document.getElementById(`${point[0]}, ${point[1]}, computer`);
+            sunkCell.classList.add('sunk');
+        });
+
+
     }
     
     if(!readyToPlace) {
@@ -217,7 +232,7 @@ function render() {
 }
 
 function handlePlayerGridClick(e){
-    if(!e.target.classList.contains('grid-cell') || currentTurn !== "player") {
+    if(!e.target.classList.contains('grid-cell') || currentTurn !== "player" || gameWinner) {
         return;
     };
     //If bugs have not been placed, let's place them
@@ -248,8 +263,7 @@ function handlePlayerGridClick(e){
 }
 
 function handleComputerGridClick(e){
-    //TODO check to make sure cell wasn't clicked before...no use wasting missiles!
-    if(!e.target.classList.contains('grid-cell') || currentTurn !== "player") {
+    if(!e.target.classList.contains('grid-cell') || currentTurn !== "player" || gameWinner) {
         return;
     };
     if(e.target.classList.contains('hit') || e.target.classList.contains('missed')){
@@ -381,6 +395,10 @@ function fireShot(offense, cell){
         hitData.shipsHit[shipHit[0]].push([x,y]);
         hitData.shipsLeft[shipHit[0]].splice(shipHit[1], 1);
         if(hitData.shipsLeft[shipHit[0]].length === 0){
+            //Push all the ships cells to sunkCells
+            for(let shipCells of hitData.shipsHit[shipHit[0]]){
+                hitData.sunkCells.push(shipCells);
+            }
             delete hitData.shipsLeft[shipHit[0]];
             if(currentTurn === "computer") {
                 hitData.lastHit = [];
@@ -395,7 +413,12 @@ function fireShot(offense, cell){
         hitData.emptyCells.push([x,y]);
     }
     if(isWinner()){
-        render();
+        console.log('checking is winner');
+        gameWinner = offense;
+        setTimeout(function(){
+            gameMessage = `${offense} is the winner!`;
+            render();
+        }, 500);
         return;
     }
 
@@ -407,7 +430,7 @@ function fireShot(offense, cell){
             shotsLeft = MAX_SHOTS;
             gameMessage = "Computer's turn.";
             render();
-            while(shotsLeft > 0 && currentTurn === "computer"){
+            while(shotsLeft > 0 && currentTurn === "computer" && !gameWinner){
                 computerShots();
             }
         } else {
@@ -419,7 +442,6 @@ function fireShot(offense, cell){
 
     function isWinner(){
         if(Object.keys(hitData.shipsLeft).length === 0){
-            gameMessage = `${offense} is the winner!`;
             return true;
         }
         return false;
@@ -457,10 +479,13 @@ async function computerPlacement(){
     if (doneMoving) {
         setTimeout(function(){
             //This gives the illusion of the computer thinking.
-            gameMessage = "Computer finished. Let's play";
-            currentTurn = "player";
-            bugsPlaced = true;
-            render();
+            if(!gameWinner){
+                gameMessage = "Computer finished. Let's play";
+                currentTurn = "player";
+                bugsPlaced = true;
+                render();
+                //TODO See if this works!
+            }
         }, 4000);
     }
 
@@ -506,347 +531,354 @@ async function computerPlacement(){
 }
 
 async function computerShots() {
-    let computerStatus = await doneShooting();
-    if (doneShooting) {
-        setTimeout(function(){
-            //This gives the illusion of the computer thinking.
-            gameMessage = "Player's turn.";
-            currentTurn = "player";
-            // shotsLeft = MAX_SHOTS; //TODO remove this once computer can decrement it's count...this is redundant
-            render();
-        }, 500); //TODO Change this to 4000 when done testing
-    }
-
-    function doneShooting(){
-        let x, y;
-        let lastHit = hits.computer.lastHit;
-        let lastX = lastHit[1];
-        let lastY = lastHit[2];
-        //first look for hits, if something was hit and the ship was still in the queue, guess around it
-        if(lastHit.length > 0 && !lastShipSunk()) {
-            //if a ship was shot last time, guess around it
-            //FIRST determine the situation
-            document.getElementById(`${lastX}, ${lastY}, computer`);
-            console.log('about to fire while loop');
-            
-            let possibilities = checkDirections([lastX, lastY]).sort(function(a,b){
-                return b.length - a.length;
-            }); // Sorts the array by length
-            console.log(possibilities);
-            console.log(possibilities.length);
-            console.log(possibilities.toString());
-            //check real quick to make sure computer is not on it's way to sinking a ship
-            //If there was a single best bet returned
-            if(possibilities.length === 1){
-                console.log(possibilities[0]);
-                console.log(possibilities[0][possibilities[0].length-1]);
-                let targCell = possibilities[0][possibilities[0].length-1];
-                fireShot("computer", `${targCell[0]}, ${targCell[1]}`);
-                return;
-            }
-            //If all surrounding spots are empty, choose direction at random
-            if(possibilities[0].length === possibilities[possibilities.length-1].length){
-                let availableOptions = [];
-                console.log('surrounding spots empty');
-                // for(let i = 0; i < possibilities.length; i++){
-                //     availableOptions.push(possibilities[i][0]);
-                // }
-                // let randomDirection = availableOptions[Math.floor(Math.random()*availableOptions.length)];
-                let randomDirection = possibilities[Math.floor(Math.random()*possibilities.length)][0];
-                let shot = makeGuess(randomDirection, lastX, lastY);
-                fireShot("computer", `${shot[0]}, ${shot[1]}`);
-            } else { //if a pattern is emerging 
-                console.log('pattern emerging');
-                let targetDirection = possibilities[0].shift();
-                if (targetDirection === "left" || targetDirection === "right"){
-                    let targetCells = possibilities[0].sort(function(a,b){
-                        return a[0] - b[0];
-                    });
-                    let leftSide = targetCells[0];
-                    let rightSide = targetCells[targetCells.length - 1];
-                    if(lastX === leftSide[0]){ 
-                        console.log(`fire to right ${rightSide[0]}, ${rightSide[1]}`);
-                        //if the left most one is the one then there's a miss in that direction, go right
-                        fireShot("computer", `${rightSide[0]}, ${rightSide[1]}`);
-                    } else if (lastX === rightSide[0]) {
-                        console.log(`fire to left ${leftSide[0]}, ${leftSide[1]}`);
-                        //if the right most one is the one then there's a miss in that direction, go left
-                        fireShot("computer", `${leftSide[0]}, ${leftSide[1]}`);
-                    } else {
-                        //if either side could work, do coin flip
-                        let coinFlip = Math.floor(Math.random()*2);
-                        console.log('random flip', coinFlip);
-                        if (coinFlip === 0){
-                            fireShot("computer", `${rightSide[0]}, ${rightSide[1]}`);
-                        } else {
-                            fireShot("computer", `${leftSide[0]}, ${leftSide[1]}`);
-                        }
-                    }
-                }
-                if(targetDirection === "up" || targetDirection === "down"){
-                    let targetCells = possibilities[0].sort(function(a,b){
-                        return a[1] - b[1];
-                    });
-                    let downSide = targetCells[0];
-                    let upSide = targetCells[targetCells.length - 1];
-                    if(lastY === downSide[1]){ 
-                        console.log(`fire to up ${upSide[0]}, ${upSide[1]}`);
-                        //if the lower most one is the one then there's a miss in that direction, go up
-                        fireShot("computer", `${upSide[0]}, ${upSide[1]}`);
-                    } else if (lastY === upSide[1]) {
-                        console.log(`fire to down ${downSide[0]}, ${downSide[1]}`);
-                        //if the upper most one is the one then there's a miss in that direction, go down
-                        fireShot("computer", `${downSide[0]}, ${downSide[1]}`);
-                    } else {
-                       //if either side could work, do coin flip
-                       let coinFlip = Math.floor(Math.random()*2);
-                       console.log('random flip', coinFlip);
-                       if (coinFlip === 0){
-                        fireShot("computer", `${upSide[0]}, ${upSide[1]}`);
-                       } else {
-                        fireShot("computer", `${downSide[0]}, ${downSide[1]}`);
-                       }
-                    }
-                }
-
-            
-
-
-                //if next hit was up or down, pick random direction
-            }
-            
-            // if(possibilities[0].length === possibilities[1].length){// Now check for multiple options
-            //     let randomDirection = 
-            // }
-            
-
-            //If one adjacent spot is a hit, then flip a coin to determine to go one direction or another
-            //left/right or up/down
-
-            //if computer has sunk a ship but there was a previous hit, as is the case with
-            //adjacent bugs, find any outstanding hits and go from there 
-            console.log('while loop finished!');
-
-            function checkDirections(origin){ // this will return an array of all the different directions
-                let counter = 0;
-                let possCells = [];
-                let returnArray = [];
-                let endOfLine = false;
-                let bestBet = "";
-                //TODO if a run of red squares includes sunk ship, don't return it..
-                //in otherwords, treat it like a miss
-                //Check left
-                console.log('return array should be empty');
-                console.log(returnArray);
-                while((origin[0] - counter) > 0 && !endOfLine){
-                    let left = document.getElementById(`${origin[0] - counter}, ${origin[1]}, player`);
-                    if(left.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
-                        possCells = [];
-                        endOfLine = true;
-                        if(counter >= 2) {
-                            bestBet = "right";
-                        }
-                        console.log(counter, endOfLine, "checking if miss is happening");
-                    } else if (left.classList.contains("hit")){
-                        //if the last hit cells is at the edge of the grid, don't go any further!!!
-                        if(origin[0]+ counter === 1) {
-                            possCells = [];
-                            endOfLine = true;
-                        } else {
-                            possCells.push([(origin[0] - counter),origin[1]]);
-                            counter++;
-                            console.log(counter, endOfLine, "checking if hit is happening");
-                        }
-                    } else {
-                        console.log(counter, endOfLine, "checking if alternative is happening");
-                        possCells.push([(origin[0] - counter),origin[1]]);
-                        endOfLine = true;
-                    }
-                }
-                console.log(possCells.length);
-                if (possCells.length > 0){
-                    console.log('prepend the array');
-                    possCells.unshift("left");
-                    console.log(possCells);
-                    returnArray.push(possCells);
-                    console.log(returnArray);
-                    possCells = [];
-                }
-                console.log("returnArray after first loop");
-                console.log(returnArray.toString());
-                endOfLine = false;
-                counter = 0;
-                //Check right
-                while((origin[0] + counter) <= GRID_SIZE && !endOfLine){
-                    let right = document.getElementById(`${origin[0] + counter}, ${origin[1]}, player`);
-                    if(right.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
-                        possCells = [];
-                        endOfLine = true;
-                        if(counter >= 2) {
-                            bestBet = "left";
-                        }    
-                        console.log(counter, endOfLine, "checking if miss is happening");
-                    } else if (right.classList.contains("hit")){
-                        //if the last hit cells is at the edge of the grid, don't go any further!!!
-                        if(origin[0]+ counter === GRID_SIZE) {
-                            possCells = [];
-                            endOfLine = true;
-                        } else {
-                            possCells.push([(origin[0] + counter),origin[1]]);
-                            counter++;
-                            console.log(counter, endOfLine, "checking if hit is happening");
-                        }
-                    } else {
-                        console.log(counter, endOfLine, "checking if alternative is happening");
-                        possCells.push([(origin[0] + counter),origin[1]]);
-                        endOfLine = true;
-                    }
-                }
-                console.log(possCells.length);
-                if (possCells.length > 0){
-                    console.log('prepend the array');
-                    possCells.unshift("right");
-                    console.log(possCells);
-                    returnArray.push(possCells);
-                    console.log(returnArray.toString());
-                    possCells = [];
-                }
-                endOfLine = false;
-                counter = 0;
-
-                //Check down
-                while((origin[1] - counter) > 0 && !endOfLine){
-                    let down = document.getElementById(`${origin[0]}, ${origin[1] - counter}, player`);
-                    if(down.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
-                        possCells = [];
-                        endOfLine = true;
-                        if(counter >= 2) {
-                            bestBet = "up";
-                        }
-                        console.log(counter, endOfLine, "checking if miss is happening");
-                    } else if (down.classList.contains("hit")){
-                        //if the last hit cells is at the edge of the grid, don't go any further!!!
-                        if(origin[1]+ counter === 1) {
-                            possCells = [];
-                            endOfLine = true;
-                        } else {
-                            possCells.push([origin[0],(origin[1] - counter)]);
-                            counter++;
-                            console.log(counter, endOfLine, "checking if hit is happening");
-                        }
-                    } else {
-                        console.log(counter, endOfLine, "checking if alternative is happening");
-                        possCells.push([origin[0],(origin[1] - counter)]);
-                        endOfLine = true;
-                    }
-                }
-                console.log(possCells.length);
-                if (possCells.length > 0){
-                    console.log('prepend the array');
-                    possCells.unshift("down");
-                    console.log(possCells);
-                    returnArray.push(possCells);
-                    console.log(returnArray.toString());
-                    possCells = [];
-                }
-                endOfLine = false;
-                counter = 0;
-                //Check up
-                while((origin[1] + counter) <= GRID_SIZE && !endOfLine){
-                    let up = document.getElementById(`${origin[0]}, ${origin[1] + counter}, player`);
-                    if(up.classList.contains("missed")){ //Don't guess in this direction if you're at end of bug
-                        possCells = [];
-                        endOfLine = true;
-                        if(counter >= 2) {
-                            bestBet = "down";
-                        }
-                        console.log(counter, endOfLine, "checking if miss is happening");
-                    } else if (up.classList.contains("hit")){
-                        //if the last hit cells is at the edge of the grid, don't go any further!!!
-                        if(origin[1]+ counter === GRID_SIZE) {
-                            possCells = [];
-                            endOfLine = true;
-                        } else {
-                        possCells.push([origin[0],(origin[1] + counter)]);
-                        counter++;
-                        console.log(counter, endOfLine, "checking if hit is happening");
-                        }
-                    } else {
-                        console.log(counter, endOfLine, "checking if alternative is happening");
-                        possCells.push([origin[0],(origin[1] + counter)]);
-                        endOfLine = true;
-                    }
-                }
-                console.log(possCells.length);
-                if (possCells.length > 0){
-                    console.log('prepend the array');
-                    possCells.unshift("up");
-                    console.log(possCells);
-                    returnArray.push(possCells);
-                    console.log(returnArray.toString());
-                    possCells = [];
-                }
-                if(bestBet){
-                    for(let innerArray of returnArray) {
-                        if(innerArray.findIndex((element) => element === bestBet) === 0) {
-                            returnArray = [];
-                            returnArray.push(innerArray);
-                        }
-                    }
-                } 
-                  return returnArray;
-            }
-
-            function makeGuess(direction, originX, originY){
-                let options = {
-                    left: ["x", -1],
-                    right: ["x", 1],
-                    down: ["y", -1],
-                    up: ["y", 1]
-                };
-                console.log('making guess', direction, originX, originY);
-                let newX = (options[direction][0] === "x") ? originX + options[direction][1] : originX;
-                let newY = (options[direction][0] === "y") ? originY + options[direction][1] : originY;
-                return [newX, newY];
-            }
+    if(!gameWinner){
+        let computerStatus = await doneShooting();
+        if (doneShooting) {
+            setTimeout(function(){
+                //This gives the illusion of the computer thinking.
+                gameMessage = "Player's turn.";
+                currentTurn = "player";
+                // shotsLeft = MAX_SHOTS; //TODO remove this once computer can decrement it's count...this is redundant
+                render();
+            }, 400); //TODO Change this to 4000 when done testing
+        }
     
-        } else if (outstandingHits()){
-            //are there other hits out there that aren't haven't been completed?
-            console.log('finding outstanding');
-            lastHit = outstandingHits();
-            // TODO this should suffice... depending on where shots are decremented, 
-            // you may want to increment the shot to allow the process to start again from scratch
-
-        } else { //if nothing else...pick a random
-            console.log('completely random choice');
-            //pick a random number
-            x = Math.ceil(Math.random()*GRID_SIZE);
-            y = Math.ceil(Math.random()*GRID_SIZE);
-            fireShot("computer", `${x}, ${y}`);
-        }       
-        console.log('shots fired');
+        function doneShooting(){
+            let x, y;
+            let lastHit = hits.computer.lastHit;
+            let lastX = lastHit[1];
+            console.log('this should be the same thing as whatcame out in the outstanding hits check');
+            console.log(lastHit);
+            let lastY = lastHit[2];
+            //first look for hits, if something was hit and the ship was still in the queue, guess around it
+            if(lastHit.length > 0 && !lastShipSunk()) {
+                //if a ship was shot last time, guess around it
+                //FIRST determine the situation
+                document.getElementById(`${lastX}, ${lastY}, computer`);
+                console.log('about to fire while loop');
+                
+                let possibilities = checkDirections([lastX, lastY]).sort(function(a,b){
+                    return b.length - a.length;
+                }); // Sorts the array by length
+                console.log(possibilities);
+                console.log(possibilities.length);
+                console.log(possibilities.toString());
+                //check real quick to make sure computer is not on it's way to sinking a ship
+                //If there was a single best bet returned
+                if(possibilities.length === 1){
+                    console.log(possibilities[0]);
+                    console.log(possibilities[0][possibilities[0].length-1]);
+                    let targCell = possibilities[0][possibilities[0].length-1];
+                    fireShot("computer", `${targCell[0]}, ${targCell[1]}`);
+                    return;
+                }
+                //If all surrounding spots are empty, choose direction at random
+                if(possibilities[0].length === possibilities[possibilities.length-1].length){
+                    let availableOptions = [];
+                    console.log('surrounding spots empty');
+                    // for(let i = 0; i < possibilities.length; i++){
+                    //     availableOptions.push(possibilities[i][0]);
+                    // }
+                    // let randomDirection = availableOptions[Math.floor(Math.random()*availableOptions.length)];
+                    let randomDirection = possibilities[Math.floor(Math.random()*possibilities.length)][0];
+                    let shot = makeGuess(randomDirection, lastX, lastY);
+                    fireShot("computer", `${shot[0]}, ${shot[1]}`);
+                } else { //if a pattern is emerging 
+                    console.log('pattern emerging');
+                    let targetDirection = possibilities[0].shift();
+                    if (targetDirection === "left" || targetDirection === "right"){
+                        let targetCells = possibilities[0].sort(function(a,b){
+                            return a[0] - b[0];
+                        });
+                        let leftSide = targetCells[0];
+                        let rightSide = targetCells[targetCells.length - 1];
+                        if(lastX === leftSide[0]){ 
+                            console.log(`fire to right ${rightSide[0]}, ${rightSide[1]}`);
+                            //if the left most one is the one then there's a miss in that direction, go right
+                            fireShot("computer", `${rightSide[0]}, ${rightSide[1]}`);
+                        } else if (lastX === rightSide[0]) {
+                            console.log(`fire to left ${leftSide[0]}, ${leftSide[1]}`);
+                            //if the right most one is the one then there's a miss in that direction, go left
+                            fireShot("computer", `${leftSide[0]}, ${leftSide[1]}`);
+                        } else {
+                            //if either side could work, do coin flip
+                            let coinFlip = Math.floor(Math.random()*2);
+                            console.log('random flip', coinFlip);
+                            if (coinFlip === 0){
+                                fireShot("computer", `${rightSide[0]}, ${rightSide[1]}`);
+                            } else {
+                                fireShot("computer", `${leftSide[0]}, ${leftSide[1]}`);
+                            }
+                        }
+                    }
+                    if(targetDirection === "up" || targetDirection === "down"){
+                        let targetCells = possibilities[0].sort(function(a,b){
+                            return a[1] - b[1];
+                        });
+                        let downSide = targetCells[0];
+                        let upSide = targetCells[targetCells.length - 1];
+                        if(lastY === downSide[1]){ 
+                            console.log(`fire to up ${upSide[0]}, ${upSide[1]}`);
+                            //if the lower most one is the one then there's a miss in that direction, go up
+                            fireShot("computer", `${upSide[0]}, ${upSide[1]}`);
+                        } else if (lastY === upSide[1]) {
+                            console.log(`fire to down ${downSide[0]}, ${downSide[1]}`);
+                            //if the upper most one is the one then there's a miss in that direction, go down
+                            fireShot("computer", `${downSide[0]}, ${downSide[1]}`);
+                        } else {
+                           //if either side could work, do coin flip
+                           let coinFlip = Math.floor(Math.random()*2);
+                           console.log('random flip', coinFlip);
+                           if (coinFlip === 0){
+                            fireShot("computer", `${upSide[0]}, ${upSide[1]}`);
+                           } else {
+                            fireShot("computer", `${downSide[0]}, ${downSide[1]}`);
+                           }
+                        }
+                    }
+    
+                
+    
+    
+                    //if next hit was up or down, pick random direction
+                }
+                
+                // if(possibilities[0].length === possibilities[1].length){// Now check for multiple options
+                //     let randomDirection = 
+                // }
+                
+    
+                //If one adjacent spot is a hit, then flip a coin to determine to go one direction or another
+                //left/right or up/down
+    
+                //if computer has sunk a ship but there was a previous hit, as is the case with
+                //adjacent bugs, find any outstanding hits and go from there 
+                console.log('while loop finished!');
+    
+                function checkDirections(origin){ // this will return an array of all the different directions
+                    let counter = 0;
+                    let possCells = [];
+                    let returnArray = [];
+                    let endOfLine = false;
+                    let bestBet = "";
+                    //TODO if a run of red squares includes sunk ship, don't return it..
+                    //in otherwords, treat it like a miss
+                    //Check left
+                    console.log('return array should be empty');
+                    console.log(returnArray);
+                    while((origin[0] - counter) > 0 && !endOfLine){
+                        let left = document.getElementById(`${origin[0] - counter}, ${origin[1]}, player`);
+                        if(left.classList.contains("missed") || left.classList.contains("sunk")){ //Don't guess in this direction if you're at end of bug
+                            possCells = [];
+                            endOfLine = true;
+                            if(counter >= 2) {
+                                bestBet = "right";
+                            }
+                            console.log(counter, endOfLine, "checking if miss is happening");
+                        } else if (left.classList.contains("hit")){
+                            //if the last hit cells is at the edge of the grid, don't go any further!!!
+                            if(origin[0]+ counter === 1) {
+                                possCells = [];
+                                endOfLine = true;
+                            } else {
+                                possCells.push([(origin[0] - counter),origin[1]]);
+                                counter++;
+                                console.log(counter, endOfLine, "checking if hit is happening");
+                            }
+                        } else {
+                            console.log(counter, endOfLine, "checking if alternative is happening");
+                            possCells.push([(origin[0] - counter),origin[1]]);
+                            endOfLine = true;
+                        }
+                    }
+                    console.log(possCells.length);
+                    if (possCells.length > 0){
+                        console.log('prepend the array');
+                        possCells.unshift("left");
+                        console.log(possCells);
+                        returnArray.push(possCells);
+                        console.log(returnArray);
+                        possCells = [];
+                    }
+                    console.log("returnArray after first loop");
+                    console.log(returnArray.toString());
+                    endOfLine = false;
+                    counter = 0;
+                    //Check right
+                    while((origin[0] + counter) <= GRID_SIZE && !endOfLine){
+                        let right = document.getElementById(`${origin[0] + counter}, ${origin[1]}, player`);
+                        if(right.classList.contains("missed") || right.classList.contains("sunk")){ //Don't guess in this direction if you're at end of bug
+                            possCells = [];
+                            endOfLine = true;
+                            if(counter >= 2) {
+                                bestBet = "left";
+                            }    
+                            console.log(counter, endOfLine, "checking if miss is happening");
+                        } else if (right.classList.contains("hit")){
+                            //if the last hit cells is at the edge of the grid, don't go any further!!!
+                            if(origin[0]+ counter === GRID_SIZE) {
+                                possCells = [];
+                                endOfLine = true;
+                            } else {
+                                possCells.push([(origin[0] + counter),origin[1]]);
+                                counter++;
+                                console.log(counter, endOfLine, "checking if hit is happening");
+                            }
+                        } else {
+                            console.log(counter, endOfLine, "checking if alternative is happening");
+                            possCells.push([(origin[0] + counter),origin[1]]);
+                            endOfLine = true;
+                        }
+                    }
+                    console.log(possCells.length);
+                    if (possCells.length > 0){
+                        console.log('prepend the array');
+                        possCells.unshift("right");
+                        console.log(possCells);
+                        returnArray.push(possCells);
+                        console.log(returnArray.toString());
+                        possCells = [];
+                    }
+                    endOfLine = false;
+                    counter = 0;
+    
+                    //Check down
+                    while((origin[1] - counter) > 0 && !endOfLine){
+                        let down = document.getElementById(`${origin[0]}, ${origin[1] - counter}, player`);
+                        if(down.classList.contains("missed") || down.classList.contains("sunk")){ //Don't guess in this direction if you're at end of bug
+                            possCells = [];
+                            endOfLine = true;
+                            if(counter >= 2) {
+                                bestBet = "up";
+                            }
+                            console.log(counter, endOfLine, "checking if miss is happening");
+                        } else if (down.classList.contains("hit")){
+                            //if the last hit cells is at the edge of the grid, don't go any further!!!
+                            if(origin[1]+ counter === 1) {
+                                possCells = [];
+                                endOfLine = true;
+                            } else {
+                                possCells.push([origin[0],(origin[1] - counter)]);
+                                counter++;
+                                console.log(counter, endOfLine, "checking if hit is happening");
+                            }
+                        } else {
+                            console.log(counter, endOfLine, "checking if alternative is happening");
+                            possCells.push([origin[0],(origin[1] - counter)]);
+                            endOfLine = true;
+                        }
+                    }
+                    console.log(possCells.length);
+                    if (possCells.length > 0){
+                        console.log('prepend the array');
+                        possCells.unshift("down");
+                        console.log(possCells);
+                        returnArray.push(possCells);
+                        console.log(returnArray.toString());
+                        possCells = [];
+                    }
+                    endOfLine = false;
+                    counter = 0;
+                    //Check up
+                    while((origin[1] + counter) <= GRID_SIZE && !endOfLine){
+                        let up = document.getElementById(`${origin[0]}, ${origin[1] + counter}, player`);
+                        if(up.classList.contains("missed") || up.classList.contains("sunk")){ //Don't guess in this direction if you're at end of bug
+                            possCells = [];
+                            endOfLine = true;
+                            if(counter >= 2) {
+                                bestBet = "down";
+                            }
+                            console.log(counter, endOfLine, "checking if miss is happening");
+                        } else if (up.classList.contains("hit")){
+                            //if the last hit cells is at the edge of the grid, don't go any further!!!
+                            if(origin[1]+ counter === GRID_SIZE) {
+                                possCells = [];
+                                endOfLine = true;
+                            } else {
+                            possCells.push([origin[0],(origin[1] + counter)]);
+                            counter++;
+                            console.log(counter, endOfLine, "checking if hit is happening");
+                            }
+                        } else {
+                            console.log(counter, endOfLine, "checking if alternative is happening");
+                            possCells.push([origin[0],(origin[1] + counter)]);
+                            endOfLine = true;
+                        }
+                    }
+                    console.log(possCells.length);
+                    if (possCells.length > 0){
+                        console.log('prepend the array');
+                        possCells.unshift("up");
+                        console.log(possCells);
+                        returnArray.push(possCells);
+                        console.log(returnArray.toString());
+                        possCells = [];
+                    }
+                    if(bestBet){
+                        for(let innerArray of returnArray) {
+                            if(innerArray.findIndex((element) => element === bestBet) === 0) {
+                                returnArray = [];
+                                returnArray.push(innerArray);
+                            }
+                        }
+                    } 
+                      return returnArray;
+                }
+    
+                function makeGuess(direction, originX, originY){
+                    let options = {
+                        left: ["x", -1],
+                        right: ["x", 1],
+                        down: ["y", -1],
+                        up: ["y", 1]
+                    };
+                    console.log('making guess', direction, originX, originY);
+                    let newX = (options[direction][0] === "x") ? originX + options[direction][1] : originX;
+                    let newY = (options[direction][0] === "y") ? originY + options[direction][1] : originY;
+                    return [newX, newY];
+                }
         
-
-        // check to make sure that cell wasn't already picked.
-        function lastShipSunk(){ //this checks to see if last blast sunk the ship
-            console.log('checking for lastShipSunk')
-            if(!hits.computer.shipsHit.hasOwnProperty(lastHit[0])) {
+            } else if (outstandingHits()){
+                //are there other hits out there that aren't haven't been completed?
+                console.log('finding outstanding');
+                hits.computer.lastHit = outstandingHits();
+                console.log("if this loop triggers, see if line 546ish triggers");
+                console.log(lastHit);
+                // TODO this should suffice... depending on where shots are decremented, 
+                // you may want to increment the shot to allow the process to start again from scratch
+    
+            } else { //if nothing else...pick a random
+                console.log('completely random choice');
+                //pick a random number
+                x = Math.ceil(Math.random()*GRID_SIZE);
+                y = Math.ceil(Math.random()*GRID_SIZE);
+                fireShot("computer", `${x}, ${y}`);
+            }       
+            console.log('shots fired');
+            
+    
+            // check to make sure that cell wasn't already picked.
+            function lastShipSunk(){ //this checks to see if last blast sunk the ship
+                console.log('checking for lastShipSunk')
+                if(!hits.computer.shipsHit.hasOwnProperty(lastHit[0])) {
+                    return false;
+                }
+                if(hits.computer.shipsHit[lastHit[0]].length === BATTLEBUGS[lastHit[0]].size){
+                    return true;
+                }
                 return false;
             }
-            if(hits.computer.shipsHit[lastHit[0]].length === BATTLEBUGS[lastHit[0]].size){
-                return true;
-            }
-            return false;
-        }
-
-        function outstandingHits(){
-            for (let ship in hits.computer.shipsHit){
-                if (hits.computer.shipsHit[ship].length !== BATTLEBUGS[ship].size) {
-                    console.log('lonely ship found', ship, ship[0]);
-                    return [ship, ship[0]];
+    
+            function outstandingHits(){
+                for (let ship in hits.computer.shipsHit){
+                    if (hits.computer.shipsHit[ship].length !== BATTLEBUGS[ship].size) {
+                        console.log('lonely ship found', ship, hits.computer.shipsHit[ship][0]);
+                        return [ship, hits.computer.shipsHit[ship][0]];
+                    }
                 }
             }
         }
+
     }
 }
 
