@@ -21,7 +21,7 @@ const BATTLEBUGS = {
         image: "/linkToImage.png"
     }
 };
-const MAX_SHOTS = 1; //TODO change this back to five when done testing
+const MAX_SHOTS = 5; //TODO change this back to five when done testing
 const PLACEMENT_ORDER = Object.keys(BATTLEBUGS).reverse();
 const GRID_SIZE = 8;
 
@@ -451,9 +451,9 @@ function fireShot(offense, cell){
             shotsLeft = MAX_SHOTS;
             gameMessage = "Computer's turn.";
             render();
-            while(shotsLeft > 0 && currentTurn === "computer" && !gameWinner){
+            // while(shotsLeft > 0 && currentTurn === "computer" && !gameWinner){
                 computerShots();
-            }
+            // }
         } else {
             currentTurn = "player";
             shotsLeft = MAX_SHOTS;
@@ -553,15 +553,11 @@ async function computerPlacement(){
 
 async function computerShots() {
     if(!gameWinner){
+        console.log("before the wait");
         let computerStatus = await doneShooting();
-        if (doneShooting) {
-            setTimeout(function(){
-                //This gives the illusion of the computer thinking.
-                gameMessage = "Player's turn.";
-                currentTurn = "player";
-                // shotsLeft = MAX_SHOTS; //TODO remove this once computer can decrement it's count...this is redundant
-                render();
-            }, 400); //TODO Change this to 4000 when done testing
+        if(doneShooting && currentTurn === "computer"){
+            computerShots();
+            console.log("wait is done");
         }
     
         function doneShooting(){
@@ -591,7 +587,11 @@ async function computerShots() {
                     console.log(possibilities[0][possibilities[0].length-1]);
                     let targCell = possibilities[0][possibilities[0].length-1];
                     fireShot("computer", `${targCell[0]}, ${targCell[1]}`);
-                    return;
+                    return new Promise((resolve) => {
+                        setTimeout(function(){
+                            resolve("done");
+                        }, 2000);
+                    });
                 }
                 //If all surrounding spots are empty, choose direction at random
                 if(possibilities[0].length === possibilities[possibilities.length-1].length){
@@ -898,6 +898,12 @@ async function computerShots() {
                     }
                 }
             }
+
+            return new Promise((resolve) => {
+                setTimeout(function(){
+                    resolve("done");
+                }, 2000);
+            });
         }
 
     }
@@ -905,10 +911,6 @@ async function computerShots() {
 
 
 // TODO: 
-// computer makes guesses
 // determine when ship is sunk and display image
-// determine winner
 //display images of bugs on board as well as bugs left and shots left
-//if time permits, make the bugLocations a private variable so that people can't see them.
 //remove all console logs
-//make sure that player can't guess the same cell twice
