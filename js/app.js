@@ -139,7 +139,7 @@ function init() {
     generateBoard(playerGrid, "player");
     generateBoard(computerGrid, "computer");
     currentTurn = "player";
-    gameMessage = "";
+    gameMessage = "Let's play, but first, you'll need to infect the computer. Place your bugs on the computer's board to the left. Click a spot twice to rotate it.";
     shotsLeft = MAX_SHOTS;
     gameWinner = "";
 
@@ -202,7 +202,6 @@ function render() {
             shotGrid = computerShotEl;
         }
         for (let i = 0; i < shotsLeft; i ++){
-            console.log(i);
             let shotEl = document.createElement("img");
             shotEl.className = "shot";
             shotEl.src = SHOT_IMG;
@@ -301,6 +300,7 @@ function handleComputerGridClick(e){
     }
     if(!bugsPlaced){
         gameMessage = " Place your bugs on the player grid."
+        render();
     } else {
         //This is where the the turns start!!
         console.log("it is now", currentTurn, "'s turn");
@@ -310,7 +310,6 @@ function handleComputerGridClick(e){
             fireShot("player", attackedCell);
         }
     }
-    render();
 }
 
 function planBug(bug, cell, planner){
@@ -524,7 +523,7 @@ async function computerPlacement(){
         setTimeout(function(){
             //This gives the illusion of the computer thinking.
             if(!gameWinner){
-                gameMessage = "Computer finished. Let's play";
+                gameMessage = "Computer has finished infecting your board. Now, start looking for those bugs on the right. The first to eliminate the infection wins!";
                 currentTurn = "player";
                 bugsPlaced = true;
                 render();

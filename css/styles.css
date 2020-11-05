@@ -16,6 +16,7 @@ button {
     font-weight: bold;
     font-family: "comic sans MS";
     font-size: 18px;
+    margin: 15px auto;
 }
 
 button:disabled {
@@ -34,11 +35,11 @@ button:disabled {
 /*------ The Gameboard ------*/
 #game-board {
     display: grid;
-    grid-template: 1fr 4fr/1fr 1fr;
+    grid-template: 1fr 1fr 5fr/1fr 1fr;
 }
 
-#game-board div {
-    border: 1px solid black;
+#game-board h2 {
+    text-align: center;
 }
 
 #player-grid, #computer-grid{
@@ -52,6 +53,8 @@ button:disabled {
     height: 100%;
     display: grid;
     grid-template: repeat(8, 1fr)/ 100%;
+    border: 1px solid #292929;
+    border-radius: 5px;
 }
 
 .grid .grid-row {
@@ -66,6 +69,7 @@ button:disabled {
 /*------ Cells ------*/
 .grid-cell {
     background-color: white;
+    border: 1px solid #585858;
 }
 
 .grid-cell.selected {
