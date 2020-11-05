@@ -1,6 +1,7 @@
 /*------ General Styling ------*/
 body {
     font-family: "comic sans MS";
+    background-color: powderblue;
 }
 
 h1 {
@@ -9,19 +10,36 @@ h1 {
 
 button {
     height: 40px;
-    background-color: white;
-    border: 3px solid cornflowerblue;
+    color: white;
+    border: 3px outset #235abb;
     border-radius: 5px;
-    color: #1950b3;
+    box-shadow: 3px 3px 5px rgba(0,0,0, .3);
+    background-color: #1950b3;
     font-weight: bold;
     font-family: "comic sans MS";
     font-size: 18px;
     margin: 15px auto;
+    cursor: pointer;
+    outline: none;
+}
+
+button:hover:not([disabled]) {
+    background-color: #01389a;
+    border: 3px outset #003fad;
+}
+
+button:active {
+    border: 3px inset #4470bd !important;
+    color: #efefef !important;
 }
 
 button:disabled {
     border-color: #ccc;
+    background-color: white;
     color: #929090;
+    opacity: 50%;
+    box-shadow: none;
+    cursor:default;
 }
 
 #button-div {
@@ -45,8 +63,8 @@ button:disabled {
 #player-grid, #computer-grid{
     height: 45vw;
     width: 45vw;
-    max-height: 600px;
-    max-width: 600px;
+    max-height: 400px;
+    max-width: 400px;
 }
 
 .grid {
@@ -68,12 +86,12 @@ button:disabled {
 }
 /*------ Cells ------*/
 .grid-cell {
-    background-color: white;
+    background-color: #dcdcdc;
     border: 1px solid #585858;
 }
 
 .grid-cell.selected {
-    background-color: purple;
+    background-color: #20b2aa;
 }
 
 .grid-cell.unavailable {
@@ -81,15 +99,15 @@ button:disabled {
 }
 
 .grid-cell.placed {
-    background-color: green;
+    background-color: #9acd32;
 }
 
 .grid-cell.hit {
-    background-color: red;
+    background-color: #b22222;
 }
 
 .grid-cell.missed {
-    background-color: aqua;
+    background-color: #00bfff;
 }
 
 .grid-cell.sunk {
