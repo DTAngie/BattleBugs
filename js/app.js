@@ -385,6 +385,27 @@ function fireShot(offense, cell){
     let hitData = hits[offense];
     // first add information to hit object
     //TODO, right here if cell is already in the hit list then RETURN!!!
+    if(currentTurn === "computer"){
+        console.log('inside the redundancy');
+        let previousHit = hitData.bugCells.findIndex(function(point){
+            if(point[0] === x && point[1] === y){
+                return point;
+            };
+        });
+        if(previousHit >= 0){
+            return;
+        }
+        console.log('made it past first check');
+        previousHit = hitData.emptyCells.findIndex(function(point){
+            if(point[0] === x && point[1] === y){
+                return point;
+            };
+        });
+        if(previousHit >= 0){
+            return;
+        }
+        console.log('made it past second check');
+    }
     //then check to see if cell is part of a ship
     let shipHit = wasHit(x,y);
     if(shipHit){
@@ -843,7 +864,7 @@ async function computerShots() {
                 console.log('finding outstanding');
                 hits.computer.lastHit = outstandingHits();
                 console.log("if this loop triggers, see if line 546ish triggers");
-                console.log(lastHit);
+                console.log(hits.computer.lastHit);
                 // TODO this should suffice... depending on where shots are decremented, 
                 // you may want to increment the shot to allow the process to start again from scratch
     
@@ -873,7 +894,7 @@ async function computerShots() {
                 for (let ship in hits.computer.shipsHit){
                     if (hits.computer.shipsHit[ship].length !== BATTLEBUGS[ship].size) {
                         console.log('lonely ship found', ship, hits.computer.shipsHit[ship][0]);
-                        return [ship, hits.computer.shipsHit[ship][0]];
+                        return [ship, hits.computer.shipsHit[ship][0][0], hits.computer.shipsHit[ship][0][1]];
                     }
                 }
             }
