@@ -18,12 +18,13 @@ const BATTLEBUGS = {
     },
     Epsilon: {
         size: 5,
-        image: "/images/EpsilonVirus.png"
+        image: "images/EpsilonVirus.png"
     }
 };
 const MAX_SHOTS = 5;
 const PLACEMENT_ORDER = Object.keys(BATTLEBUGS).reverse();
 const GRID_SIZE = 8;
+const SHOT_IMG = "images/injection.png";
 
 /*----- app's state (variables) -----*/
 let shotsLeft, deadComputerBugs, deadPlayerBugs;// the last two variables might not be needed
@@ -67,12 +68,15 @@ let hits = {
     }
 }
 let gameWinner = "";
+let shotGrid;
 
 /*----- cached element references -----*/
 const startBtnEl = document.getElementById('start');
 const placeBtnEl = document.getElementById('place');
 const playerGrid = document.getElementById('player-grid');
 const computerGrid = document.getElementById('computer-grid');
+const playerShotEl = document.getElementById('player-shots');
+const computerShotEl = document.getElementById('computer-shots');
 const messageEl = document.getElementById('message');
 let selectedEl; // this is the cell that was clicked
 let selectedBugBodyEls = []; // this shows where the entire bug will be if placed
@@ -127,8 +131,7 @@ function init() {
             verticalShips: []
         }
     }
-    // hits.player.shipsLeft = Object.keys(BATTLEBUGS);
-    // hits.computer.shipsLeft = Object.keys(BATTLEBUGS);
+
     deadComputerBugs = 0;
     deadPlayerBugs = 0;
     currentBug = 0;
@@ -180,6 +183,7 @@ function render() {
             occupiedCell.classList.add('placed');
         });
     }
+
     //TODO remove this once working since player shouldn't see computer's places
     for(let bug in bugLocations.computer) {
         bugLocations.computer[bug].forEach(function(point){
@@ -189,6 +193,22 @@ function render() {
     }
     //Render hits and misses
     if(bugsPlaced){
+                //Render shots left
+        playerShotEl.innerHTML = "";
+        computerShotEl.innerHTML= "";
+        if(currentTurn === "player"){
+            shotGrid = playerShotEl;
+        } else {
+            shotGrid = computerShotEl;
+        }
+        for (let i = 0; i < shotsLeft; i ++){
+            console.log(i);
+            let shotEl = document.createElement("img");
+            shotEl.className = "shot";
+            shotEl.src = SHOT_IMG;
+            shotGrid.appendChild(shotEl);
+        }
+
         hits.player.bugCells.forEach(function(point){
             let hitCell = document.getElementById(`${point[0]}, ${point[1]}, computer`);
             hitCell.classList.add('hit');
@@ -236,7 +256,7 @@ function render() {
     }
     renderMessage();
     //Remove below...it's just for quick testing
-    document.getElementById('test-shots').innerText = `${shotsLeft} shot left out of ${MAX_SHOTS}`;
+    // document.getElementById('test-shots').innerText = `${shotsLeft} shot left out of ${MAX_SHOTS}`;
 }
 
 function handlePlayerGridClick(e){

@@ -59,6 +59,10 @@ button:disabled {
     grid-template: 100% / repeat(8, 1fr);
 }
 
+.shot {
+    height: 50px;
+    margin: 10px;
+}
 /*------ Cells ------*/
 .grid-cell {
     background-color: white;
