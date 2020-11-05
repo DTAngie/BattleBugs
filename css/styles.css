@@ -53,10 +53,15 @@ button:disabled {
 /*------ The Gameboard ------*/
 #game-board {
     display: grid;
-    grid-template: 1fr 1fr 5fr/1fr 1fr;
+    grid-template: 100px 1fr 5fr/1fr 1fr;
+    max-height: 70vh;
 }
 
 #game-board h2 {
+    text-align: center;
+}
+
+#player-shots, #computer-shots {
     text-align: center;
 }
 
@@ -84,10 +89,16 @@ button:disabled {
     height: 50px;
     margin: 10px;
 }
+
+.bug {
+    max-height: 70px;
+}
+
 /*------ Cells ------*/
 .grid-cell {
     background-color: #dcdcdc;
     border: 1px solid #585858;
+    cursor: pointer;
 }
 
 .grid-cell.selected {
@@ -104,12 +115,15 @@ button:disabled {
 
 .grid-cell.hit {
     background-color: #b22222;
+    cursor: default;
 }
 
 .grid-cell.missed {
     background-color: #00bfff;
+    cursor: default;
 }
 
 .grid-cell.sunk {
     background-color: brown;
+    cursor: default;
 }

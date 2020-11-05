@@ -2,19 +2,19 @@
 const BATTLEBUGS = {
     Alpha: {
         size: 2,
-        image: "/linkToImage.png"
+        image: "images/AlphaVirus.png"
     },
     Beta: {
         size: 3,
-        image: "/linkToImage.png"
+        image: "images/BetaVirus.png"
     },
     Gamma: {
         size: 3,
-        image: "/linkToImage.png"
+        image: "images/GammaVirus.png"
     },
     Delta: {
         size: 4,
-        image: "/linkToImage.png"
+        image: "images/DeltaVirus.png"
     },
     Epsilon: {
         size: 5,
@@ -25,6 +25,7 @@ const MAX_SHOTS = 5;
 const PLACEMENT_ORDER = Object.keys(BATTLEBUGS).reverse();
 const GRID_SIZE = 8;
 const SHOT_IMG = "images/injection.png";
+const INSTRUCTIONS = "Place your bugs on the computer's board to the left. Click a spot twice to rotate it.";
 
 /*----- app's state (variables) -----*/
 let shotsLeft, deadComputerBugs, deadPlayerBugs;// the last two variables might not be needed
@@ -139,11 +140,11 @@ function init() {
     generateBoard(playerGrid, "player");
     generateBoard(computerGrid, "computer");
     currentTurn = "player";
-    gameMessage = "Let's play, but first, you'll need to infect the computer. Place your bugs on the computer's board to the left. Click a spot twice to rotate it.";
+    gameMessage = `Let's play, but first, you'll need to infect the computer. ${INSTRUCTIONS}`;
     shotsLeft = MAX_SHOTS;
     gameWinner = "";
 
-
+    
     function generateBoard(grid, user){
         grid = grid.querySelector('div');
         grid.innerHTML = "";
@@ -159,6 +160,7 @@ function init() {
             }
         }
     }
+    render();
     renderMessage();
 }
 
@@ -168,21 +170,10 @@ function render() {
     for(let i = 0; i < playerCells.length; i ++){ // clear the blocks and rebuild them
         playerCells[i].className = "grid-cell";
     }
+    playerShotEl.innerHTML = "";
+    computerShotEl.innerHTML= "";
 
-    if(selectedBugBodyEls.length > 0){
-        selectedBugBodyEls.forEach(function(cell){
-            cell.classList.add('selected');
-        });
-    } else {
-        selectedEl.classList.add('unavailable');
-    }
-    //Render placed bugs
-    for(let bug in bugLocations.player) {
-        bugLocations.player[bug].forEach(function(point){
-            let occupiedCell = document.getElementById(`${point[0]}, ${point[1]}, player`);
-            occupiedCell.classList.add('placed');
-        });
-    }
+   
 
     //TODO remove this once working since player shouldn't see computer's places
     for(let bug in bugLocations.computer) {
@@ -191,11 +182,10 @@ function render() {
             occupiedCell.classList.add('placed');
         });
     }
+
     //Render hits and misses
     if(bugsPlaced){
                 //Render shots left
-        playerShotEl.innerHTML = "";
-        computerShotEl.innerHTML= "";
         if(currentTurn === "player"){
             shotGrid = playerShotEl;
         } else {
@@ -246,6 +236,28 @@ function render() {
             //are sunk they can be routed accordingly.
             //DONT get rid of sunkcells until the new system is working
 
+    } else {
+        if(currentTurn === "player"){
+            let currentBugEl = document.createElement("img");
+            currentBugEl.className = "bug";
+            currentBugEl.src = BATTLEBUGS[PLACEMENT_ORDER[currentBug]].image;
+            playerShotEl.appendChild(currentBugEl);
+        }
+
+        if(selectedBugBodyEls.length > 0){
+            selectedBugBodyEls.forEach(function(cell){
+                cell.classList.add('selected');
+            });
+        } else if(selectedEl){
+            selectedEl.classList.add('unavailable');
+        }
+        //Render placed bugs
+        for(let bug in bugLocations.player) {
+            bugLocations.player[bug].forEach(function(point){
+                let occupiedCell = document.getElementById(`${point[0]}, ${point[1]}, player`);
+                occupiedCell.classList.add('placed');
+            });
+        }
     }
     
     if(!readyToPlace) {
@@ -254,8 +266,7 @@ function render() {
         placeBtnEl.removeAttribute('disabled');
     }
     renderMessage();
-    //Remove below...it's just for quick testing
-    // document.getElementById('test-shots').innerText = `${shotsLeft} shot left out of ${MAX_SHOTS}`;
+    
 }
 
 function handlePlayerGridClick(e){
