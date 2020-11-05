@@ -18,10 +18,10 @@ const BATTLEBUGS = {
     },
     Epsilon: {
         size: 5,
-        image: "/linkToImage.png"
+        image: "/images/EpsilonVirus.png"
     }
 };
-const MAX_SHOTS = 5; //TODO change this back to five when done testing
+const MAX_SHOTS = 5;
 const PLACEMENT_ORDER = Object.keys(BATTLEBUGS).reverse();
 const GRID_SIZE = 8;
 
@@ -54,14 +54,16 @@ let hits = {
         emptyCells: [], //this will hold the actual cells hit
         bugCells: [],
         shipsHit: {}, // this will list opponents ships hit, this may not be needed so check if actually used
-        shipsLeft: {} // this will list opponents ships left to hit
+        shipsLeft: {}, // this will list opponents ships left to hit
+        verticalShips: []
     },
     computer: {
         emptyCells: [],
         bugCells: [],
         shipsHit: {},
         shipsLeft: {},
-        lastHit: []
+        lastHit: [],
+        verticalShips: []
     }
 }
 let gameWinner = "";
@@ -113,6 +115,7 @@ function init() {
             sunkCells: [], // this is used for styling
             shipsHit: {}, // this will list opponents ships hit, this may not be needed so check if actually used
             shipsLeft: {}, // this will list opponents ships left to hit
+            verticalShips: [] //used for styling
         },
         computer: {
             emptyCells: [],
@@ -120,7 +123,8 @@ function init() {
             sunkCells: [],
             shipsHit: {},
             shipsLeft: {},
-            lastHit: []
+            lastHit: [],
+            verticalShips: []
         }
     }
     // hits.player.shipsLeft = Object.keys(BATTLEBUGS);
@@ -217,7 +221,11 @@ function render() {
             let sunkCell = document.getElementById(`${point[0]}, ${point[1]}, computer`);
             sunkCell.classList.add('sunk');
         });
-
+            // TODO Try to think a way to track the vertical ships versus horizontal ships.
+            // TODO maybe replace sunkCells for verticalShips and Horizontal ships
+            //as bugs are placed, you can populate those with names and then when ships
+            //are sunk they can be routed accordingly.
+            //DONT get rid of sunkcells until the new system is working
 
     }
     
@@ -350,29 +358,25 @@ function planBug(bug, cell, planner){
 }
 
 function placeBug(){
-    //TODO this may be redundant, you can trigger game after computer places bugs
-    if(bugsPlaced){
-     return; // TODO: trigger game start here   
-    }
     if(!readyToPlace){
         return;
     }
     let opponent = (currentTurn === "player") ? "computer" : "player";
     bugLocations[currentTurn][PLACEMENT_ORDER[currentBug]] =  selectedCells.map((x) => x);
     hits[opponent].shipsLeft[PLACEMENT_ORDER[currentBug]] = selectedCells.map((x) => x);
+    if(direction === "v"){
+        hits[opponent].verticalShips.push(PLACEMENT_ORDER[currentBug]);
+    }
     
     currentBug++;
     readyToPlace = false;
-    //TODO the curent turn restriction may be able to be removed as well as the currentBug reset....computer is using the i variable
-    //for iterations
+
     if(currentTurn === "player" && currentBug === PLACEMENT_ORDER.length){//all player bugs are placed
-        // bugsPlaced = true;
         readyToPlace = false;
-        //TODO add a delay so that even after computer does the turn it waits a while to simulate thinking
         currentBug = 0;
         currentTurn = "computer";
         selectedCells = [];
-        computerPlacement(); //this should be an async function so that render below happens first and then computerMove does
+        computerPlacement();
         gameMessage = "Your bugs have been placed. Waiting for computer."
     }
     render();
@@ -384,7 +388,6 @@ function fireShot(offense, cell){
     let y = parseInt(coordinates[1]);
     let hitData = hits[offense];
     // first add information to hit object
-    //TODO, right here if cell is already in the hit list then RETURN!!!
     if(currentTurn === "computer"){
         console.log('inside the redundancy');
         let previousHit = hitData.bugCells.findIndex(function(point){
@@ -505,14 +508,12 @@ async function computerPlacement(){
                 currentTurn = "player";
                 bugsPlaced = true;
                 render();
-                //TODO See if this works!
             }
         }, 4000);
     }
 
     function doneMoving(){
         //Choose the direction
-        bugSize =5; //Remove this hard code and replace with variable for loop
         for(let i = 0; i < PLACEMENT_ORDER.length; i++) {  
             bugSize = BATTLEBUGS[PLACEMENT_ORDER[i]].size;
             makeSelection();
@@ -543,7 +544,6 @@ async function computerPlacement(){
 
             }
             
-                render(); // TODO Maybe? take this out after test
         }
         return new Promise(resolve => resolve(true));
     }
@@ -682,8 +682,6 @@ async function computerShots() {
                     let returnArray = [];
                     let endOfLine = false;
                     let bestBet = "";
-                    //TODO if a run of red squares includes sunk ship, don't return it..
-                    //in otherwords, treat it like a miss
                     //Check left
                     console.log('return array should be empty');
                     console.log(returnArray);
@@ -865,8 +863,6 @@ async function computerShots() {
                 hits.computer.lastHit = outstandingHits();
                 console.log("if this loop triggers, see if line 546ish triggers");
                 console.log(hits.computer.lastHit);
-                // TODO this should suffice... depending on where shots are decremented, 
-                // you may want to increment the shot to allow the process to start again from scratch
     
             } else { //if nothing else...pick a random
                 console.log('completely random choice');

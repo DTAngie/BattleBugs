@@ -1,5 +1,36 @@
 /*------ General Styling ------*/
+body {
+    font-family: "comic sans MS";
+}
 
+h1 {
+ text-align: center;
+}
+
+button {
+    height: 40px;
+    background-color: white;
+    border: 3px solid cornflowerblue;
+    border-radius: 5px;
+    color: #1950b3;
+    font-weight: bold;
+    font-family: "comic sans MS";
+    font-size: 18px;
+}
+
+button:disabled {
+    border-color: #ccc;
+    color: #929090;
+}
+
+#button-div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+#button-div div {
+    text-align: center;
+}
 /*------ The Gameboard ------*/
 #game-board {
     display: grid;
@@ -10,9 +41,17 @@
     border: 1px solid black;
 }
 
+#player-grid, #computer-grid{
+    height: 45vw;
+    width: 45vw;
+    max-height: 600px;
+    max-width: 600px;
+}
+
 .grid {
+    height: 100%;
     display: grid;
-    grid-template: repeat(8, 45px)/ 100%;
+    grid-template: repeat(8, 1fr)/ 100%;
 }
 
 .grid .grid-row {
