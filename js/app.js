@@ -81,6 +81,7 @@ const computerGrid = document.getElementById('computer-grid');
 const playerShotEl = document.getElementById('player-shots');
 const computerShotEl = document.getElementById('computer-shots');
 const messageEl = document.getElementById('message');
+const messageContainerEl = document.getElementById("message-container");
 let selectedEl; // this is the cell that was clicked
 let selectedBugBodyEls = []; // this shows where the entire bug will be if placed
 let readyToPlace;
@@ -210,38 +211,24 @@ function render() {
             shotGrid.appendChild(shotEl);
         }
 
-        hits.player.bugCells.forEach(function(point){
-            let hitCell = document.getElementById(`${point[0]}, ${point[1]}, computer`);
-            hitCell.classList.add('hit');
-        });
+        for(let person in hits) {
+            let opponent = (person === "player") ? "computer" : "player";
+            hits[person].bugCells.forEach(function(point){
+                let hitCell = document.getElementById(`${point[0]}, ${point[1]}, ${opponent}`);
+                hitCell.classList.add('hit');
+            });
 
+            hits[person].emptyCells.forEach(function(point){
+                let hitCell = document.getElementById(`${point[0]}, ${point[1]}, ${opponent}`);
+                hitCell.classList.add('missed');
+            });
 
-        hits.player.emptyCells.forEach(function(point){
-            let hitCell = document.getElementById(`${point[0]}, ${point[1]}, computer`);
-            hitCell.classList.add('missed');
-        });
+            hits[person].sunkCells.forEach(function(point){
+                let sunkCell = document.getElementById(`${point[0]}, ${point[1]}, ${opponent}`);
+                sunkCell.classList.add('sunk');
+            });
+        };
 
-
-        hits.computer.bugCells.forEach(function(point){
-            let hitCell = document.getElementById(`${point[0]}, ${point[1]}, player`);
-            hitCell.classList.add('hit');
-        });
-
-
-        hits.computer.emptyCells.forEach(function(point){
-            let hitCell = document.getElementById(`${point[0]}, ${point[1]}, player`);
-            hitCell.classList.add('missed');
-        });
-
-        hits.computer.sunkCells.forEach(function(point){
-            let sunkCell = document.getElementById(`${point[0]}, ${point[1]}, player`);
-            sunkCell.classList.add('sunk');
-        });
-
-        hits.player.sunkCells.forEach(function(point){
-            let sunkCell = document.getElementById(`${point[0]}, ${point[1]}, computer`);
-            sunkCell.classList.add('sunk');
-        });
 
         for (let sunkShip in hits.player.verticalShips){
             let ship = hits.player.verticalShips[sunkShip];
@@ -292,11 +279,6 @@ function render() {
                 sunkCellEl.appendChild(sunkImageEl);
             }
         }
-            // TODO Try to think a way to track the vertical ships versus horizontal ships.
-            // TODO maybe replace sunkCells for verticalShips and Horizontal ships
-            //as bugs are placed, you can populate those with names and then when ships
-            //are sunk they can be routed accordingly.
-            //DONT get rid of sunkcells until the new system is working
 
     } else {
         if(currentTurn === "player"){
@@ -320,6 +302,12 @@ function render() {
         placeBtnEl.setAttribute('disabled', 'disabled');
     } else {
         placeBtnEl.removeAttribute('disabled');
+    }
+
+    if(gameWinner){
+        messageContainerEl.className = "win";
+    } else {
+        messageContainerEl.className = "";
     }
     renderMessage();
     
@@ -531,7 +519,7 @@ function fireShot(offense, cell){
         console.log('checking is winner');
         gameWinner = offense;
         setTimeout(function(){
-            gameMessage = `${offense} is the winner!`;
+            gameMessage = `${(offense === "computer") ? "Computer is" : "You are"} the winner! Press Start New Game to play again.`;
             render();
         }, 500);
         return;
