@@ -299,7 +299,7 @@ function handleComputerGridClick(e){
         return;
     };
     if(e.target.classList.contains('hit') || e.target.classList.contains('missed')){
-        gameMessage = "This space has already been hit.";
+        gameMessage = "You already chose this spot. Choose another one.";
         render();
         return;
     }
@@ -326,7 +326,7 @@ function planBug(bug, cell, planner){
     } else {
         selectedCells = [x,y];
         selectedBugBodyEls = [];
-        gameMessage = "Not enough space. Click again to rotate or choose another location";
+        gameMessage = "Not enough space. Click again to rotate or choose another spot.";
         readyToPlace = false;
         return false;
     }
@@ -397,7 +397,7 @@ function placeBug(){
         currentTurn = "computer";
         selectedCells = [];
         computerPlacement();
-        gameMessage = "Your have infected the computer. Please wait."
+        gameMessage = "You have infected the computer. Please wait for computer to infect your grid."
     }
     render();
 }
@@ -490,7 +490,7 @@ function fireShot(offense, cell){
         } else {
             currentTurn = "player";
             shotsLeft = MAX_SHOTS;
-            gameMessage = "Player's turn.";
+            gameMessage = "Your turn.";
         }
     }
 
