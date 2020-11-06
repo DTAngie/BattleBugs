@@ -57,7 +57,8 @@ let hits = {
         bugCells: [],
         shipsHit: {}, // this will list opponents ships hit, this may not be needed so check if actually used
         shipsLeft: {}, // this will list opponents ships left to hit
-        verticalShips: []
+        verticalShips: [],
+        horizontalShips: []
     },
     computer: {
         emptyCells: [],
@@ -65,7 +66,8 @@ let hits = {
         shipsHit: {},
         shipsLeft: {},
         lastHit: [],
-        verticalShips: []
+        verticalShips: [],
+        horizontalShips: []
     }
 }
 let gameWinner = "";
@@ -120,7 +122,8 @@ function init() {
             sunkCells: [], // this is used for styling
             shipsHit: {}, // this will list opponents ships hit, this may not be needed so check if actually used
             shipsLeft: {}, // this will list opponents ships left to hit
-            verticalShips: [] //used for styling
+            verticalShips: [], //used for styling
+            horizontalShips: []
         },
         computer: {
             emptyCells: [],
@@ -129,7 +132,8 @@ function init() {
             shipsHit: {},
             shipsLeft: {},
             lastHit: [],
-            verticalShips: []
+            verticalShips: [],
+            horizontalShips: []
         }
     }
 
@@ -183,6 +187,14 @@ function render() {
         });
     }
 
+    //Render placed bugs
+    for(let bug in bugLocations.player) {
+        bugLocations.player[bug].forEach(function(point){
+            let occupiedCell = document.getElementById(`${point[0]}, ${point[1]}, player`);
+            occupiedCell.classList.add('placed');
+        });
+    }
+
     //Render hits and misses
     if(bugsPlaced){
                 //Render shots left
@@ -230,6 +242,56 @@ function render() {
             let sunkCell = document.getElementById(`${point[0]}, ${point[1]}, computer`);
             sunkCell.classList.add('sunk');
         });
+
+        for (let sunkShip in hits.player.verticalShips){
+            let ship = hits.player.verticalShips[sunkShip];
+            if (ship.length === 3){
+                let sunkCellEl = document.getElementById(`${ship[0]}, ${ship[1]}, computer`);
+                sunkCellEl.innerHTML = "";
+                let sunkImageEl = document.createElement('img');
+                sunkImageEl.classList.add("sunk-bug", "vertical", sunkShip.toLowerCase());
+                sunkImageEl.src = BATTLEBUGS[sunkShip].image;
+                sunkCellEl.appendChild(sunkImageEl);
+            }
+        }
+
+
+        for (let sunkShip in hits.computer.verticalShips){
+            let ship = hits.computer.verticalShips[sunkShip];
+            if (ship.length === 3){
+                let sunkCellEl = document.getElementById(`${ship[0]}, ${ship[1]}, player`);
+                sunkCellEl.innerHTML = "";
+                let sunkImageEl = document.createElement('img');
+                sunkImageEl.classList.add("sunk-bug", "vertical", sunkShip.toLowerCase());
+                sunkImageEl.src = BATTLEBUGS[sunkShip].image;
+                sunkCellEl.appendChild(sunkImageEl);
+            }
+        }
+
+        for (let sunkShip in hits.player.horizontalShips){
+            let ship = hits.player.horizontalShips[sunkShip];
+            if (ship.length === 3){
+                let sunkCellEl = document.getElementById(`${ship[0]}, ${ship[1]}, computer`);
+                sunkCellEl.innerHTML = "";
+                let sunkImageEl = document.createElement('img');
+                sunkImageEl.classList.add("sunk-bug", "horizontal", sunkShip.toLowerCase());
+                sunkImageEl.src = BATTLEBUGS[sunkShip].image;
+                sunkCellEl.appendChild(sunkImageEl);
+            }
+        }
+
+
+        for (let sunkShip in hits.computer.horizontalShips){
+            let ship = hits.computer.horizontalShips[sunkShip];
+            if (ship.length === 3){
+                let sunkCellEl = document.getElementById(`${ship[0]}, ${ship[1]}, player`);
+                sunkCellEl.innerHTML = "";
+                let sunkImageEl = document.createElement('img');
+                sunkImageEl.classList.add("sunk-bug", "horizontal", sunkShip.toLowerCase());
+                sunkImageEl.src = BATTLEBUGS[sunkShip].image;
+                sunkCellEl.appendChild(sunkImageEl);
+            }
+        }
             // TODO Try to think a way to track the vertical ships versus horizontal ships.
             // TODO maybe replace sunkCells for verticalShips and Horizontal ships
             //as bugs are placed, you can populate those with names and then when ships
@@ -251,13 +313,7 @@ function render() {
         } else if(selectedEl){
             selectedEl.classList.add('unavailable');
         }
-        //Render placed bugs
-        for(let bug in bugLocations.player) {
-            bugLocations.player[bug].forEach(function(point){
-                let occupiedCell = document.getElementById(`${point[0]}, ${point[1]}, player`);
-                occupiedCell.classList.add('placed');
-            });
-        }
+  
     }
     
     if(!readyToPlace) {
@@ -278,10 +334,10 @@ function handlePlayerGridClick(e){
         selectedCells=[];
         if(e.target === selectedEl) { //if you are clicking on the same spot
             //rotate the selection
-            direction = (direction === "h") ? "v" : "h";
+            direction = (direction === "horizontalShips") ? "verticalShips" : "horizontalShips";
             planBug(PLACEMENT_ORDER[currentBug], selectedEl.id, "player");
         } else { //if you are clicking on a different spot
-            direction = "h";
+            direction = "horizontalShips";
             selectedBugBodyEls = []; // this might be redundant since the plan bug clears this element out.
             selectedEl = e.target;
             //Get current bug that needs to be placed, and it's length
@@ -330,7 +386,7 @@ function planBug(bug, cell, planner){
     selectedBugBodyEls = [];
     if(hasRoom(x,y, BATTLEBUGS[bug].size)){
         readyToPlace = true;
-        gameMessage = "";
+        gameMessage = INSTRUCTIONS;
     } else {
         selectedCells = [x,y];
         selectedBugBodyEls = [];
@@ -342,11 +398,11 @@ function planBug(bug, cell, planner){
     
     function hasRoom(x, y, bugSize){
         //check overflow first since it only happens once, then for each spot check for collision
-        if(direction === "h"){ 
+        if(direction === "horizontalShips"){ 
             if(x + bugSize > GRID_SIZE + 1) {
                 return false;
             }
-        } else if (direction === "v") {
+        } else if (direction === "verticalShips") {
             if(y + bugSize > GRID_SIZE + 1) {
                 return false;
             }
@@ -354,13 +410,13 @@ function planBug(bug, cell, planner){
         
         for(let i = 0; i< BATTLEBUGS[bug].size; i++){
             //check for overflow
-            if(direction === "h"){ 
+            if(direction === "horizontalShips"){ 
                 if(!noCollisions(x+i,y)){
                     return false;
                 }
                 selectedCells.push([x+i, y]);
                 selectedBugBodyEls.push(document.getElementById(`${x+i}, ${y}, ${currentTurn}`));
-            } else if (direction === "v"){
+            } else if (direction === "verticalShips"){
                 if(!noCollisions(x,y+i)){
                     return false;
                 }
@@ -394,9 +450,7 @@ function placeBug(){
     let opponent = (currentTurn === "player") ? "computer" : "player";
     bugLocations[currentTurn][PLACEMENT_ORDER[currentBug]] =  selectedCells.map((x) => x);
     hits[opponent].shipsLeft[PLACEMENT_ORDER[currentBug]] = selectedCells.map((x) => x);
-    if(direction === "v"){
-        hits[opponent].verticalShips.push(PLACEMENT_ORDER[currentBug]);
-    }
+    hits[opponent][direction][PLACEMENT_ORDER[currentBug]] = selectedCells[0];
     
     currentBug++;
     readyToPlace = false;
@@ -407,7 +461,7 @@ function placeBug(){
         currentTurn = "computer";
         selectedCells = [];
         computerPlacement();
-        gameMessage = "Your bugs have been placed. Waiting for computer."
+        gameMessage = "Your have infected the computer. Please wait."
     }
     render();
 }
@@ -449,6 +503,13 @@ function fireShot(offense, cell){
         hitData.shipsHit[shipHit[0]].push([x,y]);
         hitData.shipsLeft[shipHit[0]].splice(shipHit[1], 1);
         if(hitData.shipsLeft[shipHit[0]].length === 0){
+            //find the ship in vert or horiz arrays
+            console.log(shipHit);
+            if(hitData.verticalShips.hasOwnProperty(shipHit[0])){
+                hitData.verticalShips[shipHit[0]].push('sunk');
+            } else {
+                hitData.horizontalShips[shipHit[0]].push('sunk');
+            }
             //Push all the ships cells to sunkCells
             for(let shipCells of hitData.shipsHit[shipHit[0]]){
                 hitData.sunkCells.push(shipCells);
@@ -484,9 +545,10 @@ function fireShot(offense, cell){
             shotsLeft = MAX_SHOTS;
             gameMessage = "Computer's turn.";
             render();
-            // while(shotsLeft > 0 && currentTurn === "computer" && !gameWinner){
+            setTimeout(function(){
                 computerShots();
-            // }
+
+            }, 1000);
         } else {
             currentTurn = "player";
             shotsLeft = MAX_SHOTS;
@@ -539,7 +601,7 @@ async function computerPlacement(){
                 bugsPlaced = true;
                 render();
             }
-        }, 4000);
+        }, 2000);
     }
 
     function doneMoving(){
@@ -549,10 +611,10 @@ async function computerPlacement(){
             makeSelection();
 
             function makeSelection(){
-                direction = (Math.ceil(Math.random()*10) > 5) ? "h" : "v";
+                direction = (Math.ceil(Math.random()*10) > 5) ? "horizontalShips" : "verticalShips";
                 selectedBugBodyEls = [];
                 selectedCells = [];
-                if(direction === "h"){
+                if(direction === "horizontalShips"){
                     let randomX = Math.ceil(Math.random()*(GRID_SIZE - bugSize + 1));
                     let randomY = Math.ceil(Math.random()* (GRID_SIZE));
                     if(planBug(PLACEMENT_ORDER[i], `${randomX}, ${randomY}`, "computer")){
@@ -561,7 +623,7 @@ async function computerPlacement(){
                         makeSelection();
                     }
 
-                } else if (direction === "v"){
+                } else if (direction === "verticalShips"){
                     let randomX = Math.ceil(Math.random()*(GRID_SIZE));
                     let randomY = Math.ceil(Math.random()* (GRID_SIZE - bugSize + 1));
                     if(planBug(PLACEMENT_ORDER[i], `${randomX}, ${randomY}`, "computer")){

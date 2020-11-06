@@ -78,6 +78,7 @@ button:disabled {
     grid-template: repeat(8, 1fr)/ 100%;
     border: 1px solid #292929;
     border-radius: 5px;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
 }
 
 .grid .grid-row {
@@ -93,6 +94,81 @@ button:disabled {
 .bug {
     max-height: 70px;
 }
+
+
+.sunk-bug.horizontal {
+    position: relative;
+    width: 110%;
+    transform-origin: left center;
+
+}
+
+.sunk-bug.horizontal.alpha {
+    transform: scale(1.8);
+    top: 20%;
+}
+
+.sunk-bug.horizontal.beta {
+    transform: scale(2.9);
+    top: 30%;
+}
+
+.sunk-bug.horizontal.gamma {
+    transform: scale(2.5);
+    left: 25%;
+    top: 25%;
+}
+
+.sunk-bug.horizontal.delta {
+    transform: scale(3.5);
+    left: 20%;
+    top: 25%;
+}
+
+.sunk-bug.horizontal.epsilon {
+    transform: scale(4.5);
+    left: 10%;
+    top: 20%;
+}
+
+.sunk-bug.vertical {
+    position: relative;
+    transform-origin: center left;
+    width: 110%;
+}
+
+.sunk-bug.vertical.alpha {
+    transform:rotate(270deg) scale(1.8);
+    transform-origin: center center;
+    width: 100;
+    bottom: 30%;
+    right: 5%; 
+}
+
+.sunk-bug.vertical.beta {
+    transform: rotate(270deg) scale(2.9);
+    left: 50%;
+    top: 70%;
+}
+
+.sunk-bug.vertical.gamma {
+    transform: rotate(270deg) scale(2.5);
+    left: 50%;
+    top: 50%;
+}
+
+.sunk-bug.vertical.delta {
+    transform: rotate(270deg) scale(3.5);
+    left: 50%;
+    top: 50%;
+}
+
+.sunk-bug.vertical.epsilon {
+    transform: rotate(270deg) scale(4.5);
+    left: 50%;
+    top: 50%;
+}
+
 
 /*------ Cells ------*/
 .grid-cell {
