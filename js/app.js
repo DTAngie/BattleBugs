@@ -29,47 +29,14 @@ const INSTRUCTIONS = "Place your bugs on the computer's board to the left. Click
 
 /*----- app's state (variables) -----*/
 let shotsLeft;
-let bugLocations = {
-    player: {
-        Alpha: [],
-        Beta: [],
-        Gamma: [],
-        Delta: [],
-        Epsilon: []
-    },
-    computer: {
-        Alpha: [],
-        Beta: [],
-        Gamma: [],
-        Delta: [],
-        Epsilon: []
-    } 
-}
+let bugLocations = {}
 let allBugsPlaced; // Will be a true/false value to determine if game is ready to start
 let selectedCells = []; // This is used for styling of elements
 let currentBug; // This is the bug that the player is currently placing, notated by index number
 let gameMessage;
 let direction;
 let currentTurn;
-let hits = {
-    player: { // this will list opponents ships
-        emptyCells: [],
-        bugCells: [],
-        shipsHit: {},
-        shipsLeft: {},
-        verticalShips: [],
-        horizontalShips: []
-    },
-    computer: {
-        emptyCells: [],
-        bugCells: [],
-        shipsHit: {},
-        shipsLeft: {},
-        lastHit: [],
-        verticalShips: [],
-        horizontalShips: []
-    }
-}
+let hits = {} // this will list opponents ships
 let gameWinner = "";
 let shotGrid;
 let remainingCells = [];
